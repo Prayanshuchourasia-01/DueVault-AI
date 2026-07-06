@@ -56,11 +56,28 @@ You can interact with DueVault AI in two primary ways:
 ## 📸 Screenshots & Previews
 
 <div align="center">
+  <h3>Focus HUD & Pomodoro</h3>
   <img src="./src/assets/hero.png" alt="Focus HUD" width="800" />
-  <p><i>The central Focus HUD tracking an active coding session.</i></p>
-</div>
+  <p><i>The central Focus HUD tracking an active coding session, filtering out non-academic distractions.</i></p>
 
-*(Note: Add additional screenshot images to `src/assets/` and link them here to flesh out the gallery!)*
+  <br/>
+
+  <h3>Engineering Analytics Dashboard</h3>
+  <img src="./src/assets/dashboard.png" alt="Analytics Dashboard" width="800" />
+  <p><i>Live tracking of Deep Work versus Administrative Overhead, showing the upcoming 7-day pipeline.</i></p>
+
+  <br/>
+
+  <h3>Life Vault & Database</h3>
+  <img src="./src/assets/vault.png" alt="The Vault" width="800" />
+  <p><i>The centralized master database for chores, bills, and one-off tasks split into 'This Week' and 'Upcoming'.</i></p>
+
+  <br/>
+
+  <h3>AI Timetable Import</h3>
+  <img src="./src/assets/timetable.png" alt="Timetable Importer" width="800" />
+  <p><i>The raw HTML parsing engine translating messy university schedules into structured routines.</i></p>
+</div>
 
 ---
 
