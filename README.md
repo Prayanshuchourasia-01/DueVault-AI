@@ -1,6 +1,6 @@
 # DueVault AI 🚀
 
-![DueVault AI Preview](./src/assets/hero.png)
+![DueVault AI Preview](./src/assets/focus.png)
 
 **DueVault AI** is a privacy-first, fully localized AI productivity dashboard and engineering workflow engine. It leverages the power of Gemini to act as your personal project manager—parsing plain text commands and messy HTML schedules into actionable timelines, Pomodoro sessions, and deep-work analytics.
 
@@ -57,7 +57,7 @@ You can interact with DueVault AI in two primary ways:
 
 <div align="center">
   <h3>Focus HUD & Pomodoro</h3>
-  <img src="./src/assets/hero.png" alt="Focus HUD" width="800" />
+  <img src="./src/assets/focus.png" alt="Focus HUD" width="800" />
   <p><i>The central Focus HUD tracking an active coding session, filtering out non-academic distractions.</i></p>
 
   <br/>
