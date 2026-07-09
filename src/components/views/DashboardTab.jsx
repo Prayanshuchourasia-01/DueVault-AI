@@ -170,6 +170,9 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
       const isToday = task.date === todayStr;
       const isBillOrReminder = ['finance', 'bill'].includes(task.category?.toLowerCase()) || (task.reminderDays && task.reminderDays.length > 0);
       
+      const isOver = task.end && new Date(task.end) < new Date();
+      const isMissed = !task.completed && isOver;
+
       let priorityColors = {
         'CRITICAL': 'border-red-500/50 bg-red-500/10 text-red-400',
         'HIGH': 'border-orange-500/50 bg-orange-500/10 text-orange-400',
@@ -186,12 +189,28 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
         };
       }
 
-      const isActiveCandidate = isToday && !task.completed && !foundActive;
+      if (isMissed) {
+        priorityColors = {
+          'CRITICAL': 'border-red-800/80 bg-red-950/40 text-red-400 opacity-70',
+          'HIGH': 'border-red-800/80 bg-red-950/40 text-red-400 opacity-70',
+          'MEDIUM': 'border-red-800/80 bg-red-950/40 text-red-400 opacity-70',
+          'LOW': 'border-red-800/80 bg-red-950/40 text-red-400 opacity-70'
+        };
+      }
+
+      const isActiveCandidate = (timeFilter === 'TOMORROW')
+        ? (!task.completed && !foundActive)
+        : (isToday && !task.completed && !foundActive);
+      
       if (isActiveCandidate) {
         foundActive = true;
       }
 
-      const visualState = task.completed ? 'opacity-40 grayscale' : (isActiveCandidate ? 'shadow-[0_0_20px_rgba(34,211,238,0.2)] ring-2 ring-cyan-400 scale-[1.03] z-10' : 'opacity-90');
+      const visualState = task.completed 
+        ? 'opacity-40 grayscale' 
+        : (isActiveCandidate 
+            ? 'shadow-[0_0_20px_rgba(34,211,238,0.2)] ring-2 ring-cyan-400 scale-[1.03] z-10' 
+            : 'opacity-90');
 
       elements.push(
         <div 
@@ -209,6 +228,12 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
           {isBillOrReminder && (
             <div className="absolute top-0 right-0 px-2 py-0.5 bg-rose-500/40 text-[9px] font-bold uppercase tracking-widest text-white rounded-bl-lg">
               Action Required
+            </div>
+          )}
+
+          {isMissed && (
+            <div className="absolute top-0 right-0 px-2 py-0.5 bg-red-600 text-[9px] font-bold uppercase tracking-widest text-white rounded-bl-lg">
+              TIME OVER
             </div>
           )}
 

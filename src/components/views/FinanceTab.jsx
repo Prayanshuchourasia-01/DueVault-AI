@@ -126,11 +126,23 @@ const FinanceTab = ({ tasks, sendNotification }) => {
     return sum + (match ? parseFloat(match[1]) : 0);
   }, 0);
 
-  const safeToSpend = totalBalance - upcomingBillsCost;
+  // Calculate total active limits
+  const totalWalletLimits = Object.values(finances.wallets)
+    .filter(w => !w.isHidden && w.limitEnabled)
+    .reduce((sum, w) => sum + (w.spendLimit || 0), 0);
+
+  const safeToSpend = totalBalance - upcomingBillsCost - totalWalletLimits;
 
   // Budget progress calculations based on selected tab type
   const budgetLimit = activePeriod === 'PREV_MONTH' ? finances.monthlyBudget.limit : (finances.weeklyBudget?.limit || 200);
   const budgetPercent = Math.min((cashflow.spent / (budgetLimit || 1)) * 100, 100);
+
+  // Helper to format nice range display
+  const formatDateRange = (start, end) => {
+    const sOpt = { month: 'short', day: 'numeric' };
+    const eOpt = { month: 'short', day: 'numeric', year: 'numeric' };
+    return `${start.toLocaleDateString('en-US', sOpt)} - ${end.toLocaleDateString('en-US', eOpt)}`;
+  };
 
   const handleAddTransaction = (e) => {
     e.preventDefault();
@@ -226,6 +238,9 @@ const FinanceTab = ({ tasks, sendNotification }) => {
             Financial Control Center
           </h2>
           <p className="text-slate-400 mt-2">Professional tracking for budget limits, net worth, and liquidity.</p>
+          <div className="mt-2 text-xs font-mono font-bold text-cyan-400 bg-cyan-950/40 border border-cyan-800/30 px-3 py-1 rounded-lg inline-block uppercase tracking-wider">
+            {formatDateRange(activeBounds.start, activeBounds.end)}
+          </div>
         </div>
 
         {/* Dynamic Period Selectors */}
@@ -267,7 +282,9 @@ const FinanceTab = ({ tasks, sendNotification }) => {
           </div>
           <h3 className="text-emerald-400 font-bold text-sm uppercase tracking-wider mb-2">Safe-To-Spend</h3>
           <p className="text-4xl font-extrabold text-white">₹{safeToSpend.toFixed(2)}</p>
-          <p className="text-xs text-slate-500 mt-2">Total Balance minus ₹{upcomingBillsCost.toFixed(2)} in estimated upcoming bills.</p>
+          <p className="text-xs text-slate-500 mt-2">
+            Total Balance minus ₹{upcomingBillsCost.toFixed(2)} in bills and ₹{totalWalletLimits.toFixed(2)} in spend limits.
+          </p>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative">

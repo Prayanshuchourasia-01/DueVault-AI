@@ -53,11 +53,10 @@ const FocusTab = ({
   // 2. Life & Vault (Strategic Foresight): Upcoming Bills & Reminders
   const allUpcomingLifeTasks = tasks
     .filter(t => {
-      if (t.completed || t.id === activeTask?.id) return false;
-      const isBillOrFinance = ['finance', 'bill'].includes(t.category?.toLowerCase());
-      const hasReminder = t.reminderDays && t.reminderDays.length > 0;
-      const isFuture = new Date(t.end || t.date) >= todayDate;
-      return (isBillOrFinance || hasReminder) && isFuture;
+      if (t.completed || t.id === activeTask?.id || t.isRoutine || !!t.routineId) return false;
+      const isAcademic = academicCategories.includes(t.category?.toLowerCase());
+      const isFuture = new Date(t.end || t.date || t.start) >= todayDate;
+      return !isAcademic && isFuture;
     })
     .sort((a, b) => new Date(a.start || a.date) - new Date(b.start || b.date));
 
