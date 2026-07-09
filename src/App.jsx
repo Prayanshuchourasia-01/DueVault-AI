@@ -105,14 +105,39 @@ function App() {
     }
   }, [activeTask, startAlarm, stopAlarm]);
 
-  // Handle active task start notification
-  const prevActiveTaskRef = React.useRef(null);
+  // Robust Block Starting Notification Scheduler (exact minute matching)
+  const notifiedTasksRef = React.useRef(new Set());
   useEffect(() => {
-    if (activeTask && (!prevActiveTaskRef.current || prevActiveTaskRef.current.id !== activeTask.id)) {
-      sendNotification("Block Started", `${activeTask.title} is now active.`);
-    }
-    prevActiveTaskRef.current = activeTask;
-  }, [activeTask, sendNotification]);
+    const interval = setInterval(() => {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      const todayStr = now.toLocaleDateString('en-CA');
+      
+      // Check routine tasks starting now
+      todaysRoutines.forEach(rt => {
+        if (!rt.start) return;
+        const rtTimeStr = new Date(rt.start).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        const key = `rt-${rt.id}-${todayStr}-${rtTimeStr}`;
+        if (rtTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
+          sendNotification("Block Starting", `${rt.title} is starting now at ${timeStr}.`);
+          notifiedTasksRef.current.add(key);
+        }
+      });
+
+      // Check custom tasks starting now
+      tasks.forEach(task => {
+        if (task.date !== todayStr || !task.start) return;
+        const taskTimeStr = new Date(task.start).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        const key = `task-${task.id}-${todayStr}-${taskTimeStr}`;
+        if (taskTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
+          sendNotification("Block Starting", `${task.title} is starting now at ${timeStr}.`);
+          notifiedTasksRef.current.add(key);
+        }
+      });
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [tasks, todaysRoutines, sendNotification]);
 
   const handleToggleComplete = (taskId) => {
     const task = tasks.find(t => t.id === taskId) || routines.find(r => r.id === taskId) || todaysRoutines.find(r => r.id === taskId);
