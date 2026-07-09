@@ -175,9 +175,14 @@ export const useSchedule = () => {
     
     setTodaysRoutines(todaysRoutines);
 
-    const excludedCategories = ['finance', 'chores', 'life', 'vault', 'admin', 'personal'];
-    const allActiveCandidates = [...tasks, ...todaysRoutines].filter(t => 
-      !excludedCategories.includes((t.category || '').toLowerCase()) || t.isRoutine
+    const academicCategories = [
+      'study', 'coding', 'class', 'lab', 'hackathon', 'homework', 'exam', 
+      'dsa', 'lecture', 'academic', 'timetable', 'revision', 'project', 
+      'research', 'learning', 'course', 'test', 'quiz'
+    ];
+    
+    const allActiveCandidates = [...tasks.filter(t => t.date === todayDateStr), ...todaysRoutines].filter(t => 
+      t.isRoutine || academicCategories.includes((t.category || '').toLowerCase())
     );
 
     const sortedTasks = allActiveCandidates.sort((a, b) => new Date(a.start) - new Date(b.start));

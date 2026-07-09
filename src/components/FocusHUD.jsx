@@ -29,6 +29,23 @@ export const FocusHUD = ({ activeTask, nextTask, onToggleComplete }) => {
   const countdownStr = targetTime ? formatCountdown(targetTime) : "--:--:--";
   const progressPercent = hasActive ? getTaskProgress(activeTask.start, activeTask.end) : 0;
 
+  if (!hasActive && !nextTask) {
+    return (
+      <div className="bg-emerald-950/30 backdrop-blur-md p-8 rounded-2xl border border-emerald-500/30 shadow-xl shadow-emerald-950/20 text-center space-y-4 animate-fade-in w-full">
+        <div className="inline-flex p-4 bg-emerald-500/20 text-emerald-400 rounded-full animate-bounce">
+          <CheckCircle className="w-12 h-12" />
+        </div>
+        <h2 className="text-2xl font-black text-emerald-400 tracking-tight">Today's Work Completed!</h2>
+        <p className="text-slate-300 text-sm max-w-sm mx-auto leading-relaxed">
+          You've completed all scheduled timetable blocks and routines for today. Great job staying focused!
+        </p>
+        <div className="text-xs font-mono text-emerald-500 bg-emerald-950/50 px-3 py-1.5 rounded-lg border border-emerald-800/30 inline-block">
+          {currentTime.toLocaleTimeString('en-US', { hour12: true })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`bg-slate-900/80 backdrop-blur-md p-8 rounded-2xl border transition-all duration-300 shadow-xl ${
       hasActive 

@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
-import { Search, Filter, Trash2, Edit2, CheckCircle2, Circle, CalendarDays, CalendarClock } from 'lucide-react';
+import { Search, Filter, Trash2, Edit2, CheckCircle2, Circle, CalendarDays, CalendarClock, Plus } from 'lucide-react';
 import { InputEngine } from '../InputEngine';
+import { TaskAddModal } from '../TaskAddModal';
 
 const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('ALL');
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const todayDate = new Date();
   todayDate.setHours(0,0,0,0);
-  
-  const nextWeekDate = new Date(todayDate);
-  nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+
+  // Calculate Cutoff Date for "This Week" (include first 3 days of next week)
+  const cutoffDate = new Date(todayDate);
+  const daysToNextMonday = todayDate.getDay() === 0 ? 1 : (8 - todayDate.getDay());
+  cutoffDate.setDate(todayDate.getDate() + daysToNextMonday + 2); // Wednesday of next week
+  cutoffDate.setHours(23, 59, 59, 999);
 
   const baseFilteredTasks = tasks.filter(task => {
     // DO NOT show timetable routines
@@ -26,11 +31,17 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
   });
 
   const nextWeekTasks = baseFilteredTasks
-    .filter(t => new Date(t.date) <= nextWeekDate)
+    .filter(t => {
+      const taskDate = new Date(t.date || t.start);
+      return taskDate <= cutoffDate;
+    })
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const upcomingTasks = baseFilteredTasks
-    .filter(t => new Date(t.date) > nextWeekDate)
+    .filter(t => {
+      const taskDate = new Date(t.date || t.start);
+      return taskDate > cutoffDate;
+    })
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
@@ -47,6 +58,12 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
             Your centralized master list for life admin, bills, and one-off tasks.
           </p>
         </div>
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] w-full md:w-auto justify-center cursor-pointer"
+        >
+          <Plus className="w-5 h-5" /> Add Vault Task
+        </button>
       </div>
 
       <InputEngine onAddTask={onAddTask} />
@@ -142,8 +159,21 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
 
         return (
           <>
-            {renderTable(nextWeekTasks, "Due This Week (Next 7 Days)", <CalendarDays className="w-4 h-4 text-cyan-400" />)}
-            {renderTable(upcomingTasks, "Upcoming (Later)", <CalendarClock className="w-4 h-4 text-indigo-400" />)}
+            {nextWeekTasks.length > 0 && renderTable(nextWeekTasks, "Due This Week (Next 7-10 Days)", <CalendarDays className="w-4 h-4 text-cyan-400" />)}
+            {upcomingTasks.length > 0 && renderTable(upcomingTasks, "Upcoming (Later)", <CalendarClock className="w-4 h-4 text-indigo-400" />)}
+            {nextWeekTasks.length === 0 && upcomingTasks.length === 0 && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500 py-16">
+                <CalendarDays className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+                <p className="font-extrabold text-sm uppercase tracking-wider">Life Vault Empty</p>
+                <p className="text-xs text-slate-600 mt-1">Add tasks manually or use the AI Command Console above.</p>
+              </div>
+            )}
+            
+            <TaskAddModal 
+              isOpen={showAddModal} 
+              onClose={() => setShowAddModal(false)} 
+              onSave={onAddTask} 
+            />
           </>
         );
       })()}

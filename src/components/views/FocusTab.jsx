@@ -1,6 +1,5 @@
 import React from 'react';
 import { FocusHUD } from '../FocusHUD';
-import { FocusHUD } from '../FocusHUD';
 import Timetable from '../Timetable';
 import { InputEngine } from '../InputEngine';
 import { PomodoroTimer } from '../PomodoroTimer';
@@ -25,23 +24,29 @@ const FocusTab = ({
   const todaysTasks = tasks.filter(t => t.date === todayStr);
   const allTodayItems = [...todaysTasks, ...todaysRoutines];
 
-  const excludedCategories = ['finance', 'chores', 'life', 'vault', 'admin', 'personal'];
+  const academicCategories = [
+    'study', 'coding', 'class', 'lab', 'hackathon', 'homework', 'exam', 
+    'dsa', 'lecture', 'academic', 'timetable', 'revision', 'project', 
+    'research', 'learning', 'course', 'test', 'quiz'
+  ];
 
   // 1. Academic & Focus: Today's upcoming routine & academic tasks (Limit to Next 5)
   let academicTasks = allTodayItems
-    .filter(t => !excludedCategories.includes(t.category?.toLowerCase()) || t.isRoutine)
+    .filter(t => t.isRoutine || academicCategories.includes(t.category?.toLowerCase()))
     .filter(t => t.id !== activeTask?.id && new Date(t.end) > nowTime)
     .sort((a, b) => new Date(a.start) - new Date(b.start))
     .slice(0, 5);
 
   const todayDate = new Date();
   todayDate.setHours(0,0,0,0);
-  
-  const endOfThisWeek = new Date(todayDate);
-  endOfThisWeek.setDate(endOfThisWeek.getDate() + (7 - endOfThisWeek.getDay())); // Sunday
 
-  const endOfNextWeek = new Date(endOfThisWeek);
-  endOfNextWeek.setDate(endOfNextWeek.getDate() + 7);
+  const cutoffDate = new Date(todayDate);
+  const daysToNextMonday = todayDate.getDay() === 0 ? 1 : (8 - todayDate.getDay());
+  cutoffDate.setDate(todayDate.getDate() + daysToNextMonday + 2); // Wednesday of next week
+  cutoffDate.setHours(23, 59, 59, 999);
+
+  const endOfNextWeek = new Date(cutoffDate);
+  endOfNextWeek.setDate(cutoffDate.getDate() + 7);
 
   const endOfThisMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
 
@@ -56,10 +61,10 @@ const FocusTab = ({
     })
     .sort((a, b) => new Date(a.start || a.date) - new Date(b.start || b.date));
 
-  const thisWeekTasks = allUpcomingLifeTasks.filter(t => new Date(t.start || t.date) <= endOfThisWeek);
+  const thisWeekTasks = allUpcomingLifeTasks.filter(t => new Date(t.start || t.date) <= cutoffDate);
   const nextWeekTasks = allUpcomingLifeTasks.filter(t => {
     const d = new Date(t.start || t.date);
-    return d > endOfThisWeek && d <= endOfNextWeek;
+    return d > cutoffDate && d <= endOfNextWeek;
   });
   const thisMonthTasks = allUpcomingLifeTasks.filter(t => {
     const d = new Date(t.start || t.date);
@@ -91,27 +96,38 @@ const FocusTab = ({
 
         {/* Column 3: Upcoming Bills & Reminders */}
         <div className="lg:col-span-1 flex flex-col gap-6">
-          <Timetable 
-            title="Bills & Reminders: This Week" 
-            tasks={thisWeekTasks} 
-            onToggleComplete={onToggleComplete}
-            onDeleteTask={onDeleteTask}
-            accentColor="border-rose-500/50"
-          />
-          <Timetable 
-            title="Bills & Reminders: Next Week" 
-            tasks={nextWeekTasks} 
-            onToggleComplete={onToggleComplete}
-            onDeleteTask={onDeleteTask}
-            accentColor="border-orange-500/50"
-          />
-          <Timetable 
-            title="Bills & Reminders: This Month" 
-            tasks={thisMonthTasks} 
-            onToggleComplete={onToggleComplete}
-            onDeleteTask={onDeleteTask}
-            accentColor="border-indigo-500/50"
-          />
+          {thisWeekTasks.length > 0 && (
+            <Timetable 
+              title="Bills & Reminders: This Week" 
+              tasks={thisWeekTasks} 
+              onToggleComplete={onToggleComplete}
+              onDeleteTask={onDeleteTask}
+              accentColor="border-rose-500/50"
+            />
+          )}
+          {nextWeekTasks.length > 0 && (
+            <Timetable 
+              title="Bills & Reminders: Next Week" 
+              tasks={nextWeekTasks} 
+              onToggleComplete={onToggleComplete}
+              onDeleteTask={onDeleteTask}
+              accentColor="border-orange-500/50"
+            />
+          )}
+          {thisMonthTasks.length > 0 && (
+            <Timetable 
+              title="Bills & Reminders: This Month" 
+              tasks={thisMonthTasks} 
+              onToggleComplete={onToggleComplete}
+              onDeleteTask={onDeleteTask}
+              accentColor="border-indigo-500/50"
+            />
+          )}
+          {thisWeekTasks.length === 0 && nextWeekTasks.length === 0 && thisMonthTasks.length === 0 && (
+            <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 text-center py-12 text-slate-500">
+              No upcoming bills or reminders scheduled.
+            </div>
+          )}
         </div>
 
       </div>
