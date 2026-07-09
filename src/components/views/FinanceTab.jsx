@@ -3,7 +3,7 @@ import { Wallet, TrendingDown, TrendingUp, DollarSign, Plus, Trash2, CalendarDay
 import { useFinances } from '../../hooks/useFinances';
 
 const FinanceTab = ({ tasks }) => {
-  const { finances, addTransaction, deleteTransaction, updateWalletBalance, setBudgetLimit, toggleWalletVisibility, setWalletSpendLimit, addGoal, updateGoal, deleteGoal } = useFinances();
+  const { finances, addTransaction, deleteTransaction, updateWalletBalance, setBudgetLimit, setWeeklyLimit, saveReport, toggleWalletVisibility, setWalletSpendLimit, addGoal, updateGoal, deleteGoal } = useFinances();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [txType, setTxType] = useState('EXPENSE'); // 'EXPENSE' or 'INCOME'
@@ -146,34 +146,38 @@ const FinanceTab = ({ tasks }) => {
         <div className="lg:col-span-1 space-y-6">
           
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-            <div className="flex justify-between items-end mb-4">
-              <div>
-                <h3 className="text-slate-400 text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-1">
-                  <PieChart className="w-4 h-4 text-cyan-400"/> Budget Tracker
-                </h3>
-                <div className="text-2xl font-bold text-white">₹{finances.monthlyBudget.spent.toFixed(2)}</div>
-              </div>
-              <div className="text-right">
-                <span className="text-xs text-slate-500">Limit</span>
-                <div className="text-lg font-bold text-slate-300">
-                  <input 
-                    type="number" 
-                    value={finances.monthlyBudget.limit} 
-                    onChange={(e) => setBudgetLimit(e.target.value)}
-                    className="w-20 bg-transparent border-b border-slate-700 text-right focus:outline-none focus:border-cyan-500"
-                  />
+            <h3 className="text-slate-400 text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-4">
+              <PieChart className="w-4 h-4 text-cyan-400"/> Budget Trackers
+            </h3>
+            
+            {/* Monthly Budget */}
+            <div className="mb-6">
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-xs text-slate-500 font-bold uppercase">Monthly</span>
+                <div className="text-right flex items-center gap-2">
+                  <span className="text-xl font-bold text-white">₹{finances.monthlyBudget.spent.toFixed(2)}</span>
+                  <span className="text-xs text-slate-500">/</span>
+                  <input type="number" value={finances.monthlyBudget.limit} onChange={(e) => setBudgetLimit(e.target.value)} className="w-16 bg-transparent border-b border-slate-700 text-right text-sm font-bold text-slate-300 focus:outline-none focus:border-cyan-500"/>
                 </div>
               </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden relative">
+                <div className={`h-full transition-all duration-1000 ${budgetPercent > 90 ? 'bg-red-500' : (budgetPercent > 75 ? 'bg-orange-500' : 'bg-cyan-500')}`} style={{ width: `${budgetPercent}%` }} />
+              </div>
             </div>
-            <div className="w-full bg-slate-800 rounded-full h-4 overflow-hidden relative">
-              <div 
-                className={`h-full transition-all duration-1000 ${budgetPercent > 90 ? 'bg-red-500' : (budgetPercent > 75 ? 'bg-orange-500' : 'bg-cyan-500')}`}
-                style={{ width: `${budgetPercent}%` }}
-              />
-            </div>
-            <div className="flex justify-between mt-2">
-              <p className="text-xs text-slate-500">{budgetPercent.toFixed(1)}% Used</p>
-              <p className="text-xs text-slate-500">₹{(finances.monthlyBudget.limit - finances.monthlyBudget.spent).toFixed(2)} Left</p>
+
+            {/* Weekly Budget */}
+            <div>
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-xs text-slate-500 font-bold uppercase">Weekly</span>
+                <div className="text-right flex items-center gap-2">
+                  <span className="text-xl font-bold text-white">₹{(finances.weeklyBudget?.spent || 0).toFixed(2)}</span>
+                  <span className="text-xs text-slate-500">/</span>
+                  <input type="number" value={finances.weeklyBudget?.limit || 200} onChange={(e) => setWeeklyLimit(e.target.value)} className="w-16 bg-transparent border-b border-slate-700 text-right text-sm font-bold text-slate-300 focus:outline-none focus:border-cyan-500"/>
+                </div>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden relative">
+                <div className={`h-full transition-all duration-1000 ${((finances.weeklyBudget?.spent || 0) / (finances.weeklyBudget?.limit || 1) * 100) > 90 ? 'bg-red-500' : 'bg-cyan-500'}`} style={{ width: `${Math.min(((finances.weeklyBudget?.spent || 0) / (finances.weeklyBudget?.limit || 1)) * 100, 100)}%` }} />
+              </div>
             </div>
           </div>
 
@@ -405,41 +409,95 @@ const FinanceTab = ({ tasks }) => {
 
       {/* Report Modal */}
       {showReportModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setShowReportModal(false)} />
-          <div className="relative bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 print:p-0 print:block print:bg-white print:text-black">
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm print:hidden" onClick={() => setShowReportModal(false)} />
+          <div className="relative bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-fade-in print:shadow-none print:border-none print:rounded-none print:bg-white">
+            
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800/30 print:hidden">
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <PieChart className="w-5 h-5 text-indigo-400" /> Spending Report
+                <BarChart3 className="w-5 h-5 text-indigo-400" /> Professional Financial Report
               </h3>
-              <button onClick={() => setShowReportModal(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-6">
-              <div className="space-y-4">
-                {Object.entries((finances.transactions || []).filter(tx => tx.type === 'EXPENSE').reduce((acc, tx) => {
-                  acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
-                  return acc;
-                }, {})).sort((a, b) => b[1] - a[1]).map(([cat, amount], idx) => {
-                  const totalSpent = (finances.transactions || []).filter(tx => tx.type === 'EXPENSE').reduce((sum, tx) => sum + tx.amount, 0);
-                  const percent = totalSpent === 0 ? 0 : (amount / totalSpent) * 100;
-                  return (
-                    <div key={cat} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-bold text-slate-300 uppercase">{cat}</span>
-                        <span className="text-red-400 font-mono">₹{amount.toFixed(2)}</span>
-                      </div>
-                      <div className="w-full bg-slate-800 rounded-full h-2">
-                        <div className={`h-full rounded-full ${idx === 0 ? 'bg-indigo-500' : 'bg-slate-500'}`} style={{ width: `${percent}%` }}></div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {((finances.transactions || []).filter(tx => tx.type === 'EXPENSE').length === 0) && (
-                  <p className="text-slate-500 text-center italic py-4">No expenses logged yet.</p>
-                )}
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => {
+                    saveReport({ title: 'Generated Report', totalExpenses: finances.monthlyBudget.spent });
+                    window.print();
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
+                >
+                  <BarChart3 className="w-4 h-4" /> Save as PDF / Print
+                </button>
+                <button onClick={() => setShowReportModal(false)} className="text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
+            </div>
+
+            {/* Print Header (Visible only in print) */}
+            <div className="hidden print:block p-8 pb-4 border-b border-gray-200">
+              <h1 className="text-3xl font-black text-gray-900">DueVault Financial Report</h1>
+              <p className="text-gray-500 mt-1">Generated on {new Date().toLocaleString()}</p>
+            </div>
+
+            <div className="p-6 md:p-8 space-y-8">
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700 print:border-gray-200 print:bg-gray-50">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 print:text-gray-500">Total Outflow (Month)</p>
+                  <p className="text-3xl font-black text-red-400 print:text-gray-900">₹{finances.monthlyBudget.spent.toFixed(2)}</p>
+                </div>
+                <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700 print:border-gray-200 print:bg-gray-50">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 print:text-gray-500">Total Inflow (Month)</p>
+                  <p className="text-3xl font-black text-emerald-400 print:text-gray-900">₹{finances.monthlyBudget.income.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-2 print:text-gray-900 print:border-gray-200">Category Breakdown</h4>
+                <div className="space-y-4">
+                  {Object.entries((finances.transactions || []).filter(tx => tx.type === 'EXPENSE').reduce((acc, tx) => {
+                    acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
+                    return acc;
+                  }, {})).sort((a, b) => b[1] - a[1]).map(([cat, amount], idx) => {
+                    const totalSpent = (finances.transactions || []).filter(tx => tx.type === 'EXPENSE').reduce((sum, tx) => sum + tx.amount, 0);
+                    const percent = totalSpent === 0 ? 0 : (amount / totalSpent) * 100;
+                    return (
+                      <div key={cat} className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-bold text-slate-300 uppercase print:text-gray-700">{cat}</span>
+                          <span className="text-red-400 font-mono print:text-gray-900">₹{amount.toFixed(2)} <span className="text-slate-500 print:text-gray-400">({percent.toFixed(1)}%)</span></span>
+                        </div>
+                        <div className="w-full bg-slate-800 rounded-full h-2 print:bg-gray-200">
+                          <div className={`h-full rounded-full ${idx === 0 ? 'bg-indigo-500 print:bg-gray-800' : 'bg-slate-500 print:bg-gray-500'}`} style={{ width: `${percent}%` }}></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {((finances.transactions || []).filter(tx => tx.type === 'EXPENSE').length === 0) && (
+                    <p className="text-slate-500 text-center italic py-4 print:text-gray-500">No expenses logged yet.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Latest Transactions for Report */}
+              <div>
+                <h4 className="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-2 print:text-gray-900 print:border-gray-200">Recent Transactions</h4>
+                <table className="w-full text-left text-sm text-slate-300 print:text-gray-700">
+                  <tbody>
+                    {(finances.transactions || []).slice(0, 10).map(tx => (
+                      <tr key={tx.id} className="border-b border-slate-800/50 print:border-gray-200">
+                        <td className="py-2">{tx.date}</td>
+                        <td className="py-2 font-bold">{tx.title} <span className="text-[10px] bg-slate-800 px-1 rounded ml-2 print:bg-gray-100">{tx.category}</span></td>
+                        <td className={`py-2 text-right font-mono font-bold ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-red-400'} print:text-gray-900`}>
+                          {tx.type === 'INCOME' ? '+' : '-'}₹{tx.amount.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
             </div>
           </div>
         </div>

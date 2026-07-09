@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings2, Key, Bell, Volume2, Save, ShieldAlert, Code, UploadCloud, DownloadCloud, AlertTriangle } from 'lucide-react';
 import { useAudioAlarm } from '../../hooks/useAudioAlarm';
+import { useNotifications } from '../../hooks/useNotifications';
 import HTMLImporter from '../HTMLImporter';
 
 const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
@@ -9,6 +10,7 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
   const [savedMessage, setSavedMessage] = useState('');
   
   const { testAlarm } = useAudioAlarm();
+  const { permission, askPermission } = useNotifications();
 
   useEffect(() => {
     const savedKeyBase64 = localStorage.getItem('duevault_gemini_key') || '';
@@ -128,9 +130,21 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
             <Bell className="w-5 h-5 text-indigo-400" />
-            Alarm & Audio
+            Notifications & Audio
           </h3>
           
+          <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700 flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-white text-sm">Browser Push Notifications</p>
+              <p className="text-xs text-slate-400 mt-0.5">Status: <span className={permission === 'granted' ? 'text-emerald-400' : 'text-amber-400'}>{permission.toUpperCase()}</span></p>
+            </div>
+            {permission !== 'granted' && (
+              <button onClick={askPermission} className="px-4 py-2 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-colors rounded-lg text-xs font-bold uppercase tracking-wider">
+                Enable
+              </button>
+            )}
+          </div>
+
           <div className="space-y-4 pt-2">
             {ringtones.map(tone => (
               <label key={tone.id} className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${ringtone === tone.id ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'}`}>

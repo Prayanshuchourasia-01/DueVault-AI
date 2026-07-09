@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Search, Filter, Trash2, Edit2, CheckCircle2, Circle, CalendarDays, CalendarClock } from 'lucide-react';
+import { InputEngine } from '../InputEngine';
 
-const VaultTab = ({ tasks, onToggleComplete, onDeleteTask, onEditTask }) => {
+const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('ALL');
 
@@ -47,6 +48,8 @@ const VaultTab = ({ tasks, onToggleComplete, onDeleteTask, onEditTask }) => {
           </p>
         </div>
       </div>
+
+      <InputEngine onAddTask={onAddTask} />
 
       <div className="flex flex-col sm:flex-row gap-3 w-full">
         <div className="relative flex-1">

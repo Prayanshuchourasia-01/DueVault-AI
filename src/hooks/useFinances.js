@@ -8,13 +8,15 @@ const defaultFinances = {
     savings: { id: 'savings', name: 'Savings Vault', balance: 5000, isHidden: true, spendLimit: 0 }
   },
   monthlyBudget: { limit: 800, spent: 0, income: 0 },
+  weeklyBudget: { limit: 200, spent: 0, income: 0 },
   transactions: [
     { id: 'exp-1', type: 'EXPENSE', title: 'Groceries', amount: 45, date: new Date().toLocaleDateString('en-CA'), sourceWallet: 'bank1', category: 'food' },
     { id: 'exp-2', type: 'EXPENSE', title: 'Coffee', amount: 5, date: new Date().toLocaleDateString('en-CA'), sourceWallet: 'cash', category: 'leisure' },
     { id: 'exp-3', type: 'EXPENSE', title: 'AWS Hosting', amount: 12, date: new Date().toLocaleDateString('en-CA'), sourceWallet: 'bank2', category: 'bills' },
     { id: 'inc-1', type: 'INCOME', title: 'Salary', amount: 3000, date: new Date().toLocaleDateString('en-CA'), sourceWallet: 'bank1', category: 'salary' }
   ],
-  goals: []
+  goals: [],
+  reports: []
 };
 
 export const useFinances = () => {
@@ -41,21 +43,38 @@ export const useFinances = () => {
   });
 
   useEffect(() => {
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
     
+    // Weekly calculation
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
+    const startOfWeek = new Date(endOfWeek);
+    startOfWeek.setDate(startOfWeek.getDate() - 7);
+
     const monthlyTx = (finances.transactions || []).filter(tx => {
       const d = new Date(tx.date);
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
 
-    const totalSpent = monthlyTx.filter(tx => tx.type === 'EXPENSE').reduce((sum, tx) => sum + Number(tx.amount), 0);
-    const totalIncome = monthlyTx.filter(tx => tx.type === 'INCOME').reduce((sum, tx) => sum + Number(tx.amount), 0);
+    const weeklyTx = (finances.transactions || []).filter(tx => {
+      const d = new Date(tx.date);
+      return d > startOfWeek && d <= endOfWeek;
+    });
+
+    const totalSpentMonth = monthlyTx.filter(tx => tx.type === 'EXPENSE').reduce((sum, tx) => sum + Number(tx.amount), 0);
+    const totalIncomeMonth = monthlyTx.filter(tx => tx.type === 'INCOME').reduce((sum, tx) => sum + Number(tx.amount), 0);
     
-    if (finances.monthlyBudget.spent !== totalSpent || finances.monthlyBudget.income !== totalIncome) {
+    const totalSpentWeek = weeklyTx.filter(tx => tx.type === 'EXPENSE').reduce((sum, tx) => sum + Number(tx.amount), 0);
+    const totalIncomeWeek = weeklyTx.filter(tx => tx.type === 'INCOME').reduce((sum, tx) => sum + Number(tx.amount), 0);
+    
+    if (finances.monthlyBudget.spent !== totalSpentMonth || finances.monthlyBudget.income !== totalIncomeMonth || 
+        finances.weeklyBudget?.spent !== totalSpentWeek || finances.weeklyBudget?.income !== totalIncomeWeek) {
       setFinances(prev => ({
         ...prev,
-        monthlyBudget: { ...prev.monthlyBudget, spent: totalSpent, income: totalIncome }
+        monthlyBudget: { ...prev.monthlyBudget, spent: totalSpentMonth, income: totalIncomeMonth },
+        weeklyBudget: { ...(prev.weeklyBudget || defaultFinances.weeklyBudget), spent: totalSpentWeek, income: totalIncomeWeek }
       }));
     } else {
       localStorage.setItem('duevault_finances', JSON.stringify(finances));
@@ -130,6 +149,20 @@ export const useFinances = () => {
     }));
   };
 
+  const setWeeklyLimit = (limit) => {
+    setFinances(prev => ({
+      ...prev,
+      weeklyBudget: { ...(prev.weeklyBudget || defaultFinances.weeklyBudget), limit: Number(limit) }
+    }));
+  };
+
+  const saveReport = (reportData) => {
+    setFinances(prev => ({
+      ...prev,
+      reports: [{ id: Date.now().toString(), date: new Date().toLocaleString(), ...reportData }, ...(prev.reports || [])]
+    }));
+  };
+
   const toggleWalletVisibility = (walletId) => {
     setFinances(prev => ({
       ...prev,
@@ -179,6 +212,8 @@ export const useFinances = () => {
     toggleWalletVisibility,
     setWalletSpendLimit,
     setBudgetLimit,
+    setWeeklyLimit,
+    saveReport,
     addGoal,
     updateGoal,
     deleteGoal

@@ -9,8 +9,7 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave }) => {
     endTimeStr: '',
     priority: 'LOW',
     category: '',
-    reminderDaysStr: '',
-    reminderTime: ''
+    reminders: [] // Array of { minutesBefore: Number, type: 'notification' | 'alarm' | 'both' }
   });
 
   useEffect(() => {
@@ -25,8 +24,7 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave }) => {
         endTimeStr: eDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
         priority: task.priority || 'LOW',
         category: task.category || 'other',
-        reminderDaysStr: task.reminderDays ? task.reminderDays.join(', ') : '',
-        reminderTime: task.reminderTime || ''
+        reminders: task.reminders || []
       });
     }
   }, [task, isOpen]);
@@ -36,14 +34,6 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const updatedData = { ...formData };
-    
-    // Parse reminder days (e.g. "5, 1" -> [5, 1])
-    updatedData.reminderDays = formData.reminderDaysStr
-      .split(',')
-      .map(d => parseInt(d.trim(), 10))
-      .filter(d => !isNaN(d));
-    
-    delete updatedData.reminderDaysStr;
     
     onSave(task.id, updatedData);
     onClose();
@@ -134,31 +124,72 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave }) => {
             </div>
           </div>
 
-          <div className="space-y-2 pt-2 border-t border-slate-800">
-            <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
-              <Bell className="w-4 h-4" /> Reminders (Days Before)
-            </label>
-            <input 
-              type="text" 
-              placeholder="e.g. 5, 1, 0"
-              value={formData.reminderDaysStr}
-              onChange={(e) => setFormData({...formData, reminderDaysStr: e.target.value})}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-cyan-500 transition-colors text-sm"
-            />
-            <p className="text-xs text-slate-500">Enter comma-separated numbers. 0 means on the day of the event.</p>
-          </div>
+          <div className="space-y-3 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                <Bell className="w-4 h-4 text-indigo-400" /> 
+                Multi-Reminders & Alarms
+              </label>
+              <button 
+                type="button"
+                onClick={() => setFormData({...formData, reminders: [...formData.reminders, { minutesBefore: 15, type: 'notification' }]})}
+                className="text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 px-2 py-1 rounded"
+              >
+                + ADD
+              </button>
+            </div>
+            
+            <div className="space-y-2">
+              {formData.reminders.map((rem, idx) => (
+                <div key={idx} className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 p-2 rounded-lg">
+                  <select
+                    value={rem.minutesBefore}
+                    onChange={(e) => {
+                      const newRem = [...formData.reminders];
+                      newRem[idx].minutesBefore = parseInt(e.target.value);
+                      setFormData({...formData, reminders: newRem});
+                    }}
+                    className="bg-slate-900 border border-slate-700 text-xs text-white rounded p-1 focus:outline-none"
+                  >
+                    <option value={0}>At time of event</option>
+                    <option value={5}>5 mins before</option>
+                    <option value={15}>15 mins before</option>
+                    <option value={30}>30 mins before</option>
+                    <option value={60}>1 hour before</option>
+                    <option value={1440}>1 day before</option>
+                    <option value={2880}>2 days before</option>
+                  </select>
+                  
+                  <select
+                    value={rem.type}
+                    onChange={(e) => {
+                      const newRem = [...formData.reminders];
+                      newRem[idx].type = e.target.value;
+                      setFormData({...formData, reminders: newRem});
+                    }}
+                    className="bg-slate-900 border border-slate-700 text-xs text-white rounded p-1 focus:outline-none flex-1"
+                  >
+                    <option value="notification">Push Notification</option>
+                    <option value="alarm">Audio Alarm</option>
+                    <option value="both">Notification + Alarm</option>
+                  </select>
 
-          <div className="space-y-2 pt-2 border-t border-slate-800">
-            <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
-              <Clock className="w-4 h-4" /> Exact Reminder Time (Alarm)
-            </label>
-            <input 
-              type="time" 
-              value={formData.reminderTime}
-              onChange={(e) => setFormData({...formData, reminderTime: e.target.value})}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 transition-colors"
-            />
-            <p className="text-xs text-slate-500">Will sound an alarm at this exact time on the task date.</p>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const newRem = formData.reminders.filter((_, i) => i !== idx);
+                      setFormData({...formData, reminders: newRem});
+                    }}
+                    className="p-1 hover:bg-slate-700 text-slate-500 hover:text-red-400 rounded transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              {formData.reminders.length === 0 && (
+                <p className="text-xs text-slate-500 italic">No reminders set for this task.</p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2 pt-2 border-t border-slate-800">

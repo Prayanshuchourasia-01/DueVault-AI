@@ -1,6 +1,6 @@
 import React from 'react';
 import { FocusHUD } from '../FocusHUD';
-import { UpNextCard } from '../UpNextCard';
+import { FocusHUD } from '../FocusHUD';
 import Timetable from '../Timetable';
 import { InputEngine } from '../InputEngine';
 import { PomodoroTimer } from '../PomodoroTimer';
@@ -34,17 +34,37 @@ const FocusTab = ({
     .sort((a, b) => new Date(a.start) - new Date(b.start))
     .slice(0, 5);
 
+  const todayDate = new Date();
+  todayDate.setHours(0,0,0,0);
+  
+  const endOfThisWeek = new Date(todayDate);
+  endOfThisWeek.setDate(endOfThisWeek.getDate() + (7 - endOfThisWeek.getDay())); // Sunday
+
+  const endOfNextWeek = new Date(endOfThisWeek);
+  endOfNextWeek.setDate(endOfNextWeek.getDate() + 7);
+
+  const endOfThisMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
+
   // 2. Life & Vault (Strategic Foresight): Upcoming Bills & Reminders
-  let lifeTasks = tasks
+  const allUpcomingLifeTasks = tasks
     .filter(t => {
       if (t.completed || t.id === activeTask?.id) return false;
       const isBillOrFinance = ['finance', 'bill'].includes(t.category?.toLowerCase());
       const hasReminder = t.reminderDays && t.reminderDays.length > 0;
-      const isFuture = new Date(t.end || t.date) > nowTime;
+      const isFuture = new Date(t.end || t.date) >= todayDate;
       return (isBillOrFinance || hasReminder) && isFuture;
     })
-    .sort((a, b) => new Date(a.start || a.date) - new Date(b.start || b.date))
-    .slice(0, 6);
+    .sort((a, b) => new Date(a.start || a.date) - new Date(b.start || b.date));
+
+  const thisWeekTasks = allUpcomingLifeTasks.filter(t => new Date(t.start || t.date) <= endOfThisWeek);
+  const nextWeekTasks = allUpcomingLifeTasks.filter(t => {
+    const d = new Date(t.start || t.date);
+    return d > endOfThisWeek && d <= endOfNextWeek;
+  });
+  const thisMonthTasks = allUpcomingLifeTasks.filter(t => {
+    const d = new Date(t.start || t.date);
+    return d > endOfNextWeek && d <= endOfThisMonth;
+  });
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-6">
@@ -56,7 +76,6 @@ const FocusTab = ({
         <div className="lg:col-span-1 space-y-6 flex flex-col">
           <FocusHUD activeTask={activeTask} nextTask={nextTask} onToggleComplete={onToggleComplete} />
           <PomodoroTimer startAlarm={startAlarm} />
-          <UpNextCard nextTask={nextTask} />
         </div>
 
         {/* Column 2: Academic & Focus Timetable */}
@@ -71,10 +90,24 @@ const FocusTab = ({
         </div>
 
         {/* Column 3: Upcoming Bills & Reminders */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 flex flex-col gap-6">
           <Timetable 
-            title="Upcoming Bills & Reminders" 
-            tasks={lifeTasks} 
+            title="Bills & Reminders: This Week" 
+            tasks={thisWeekTasks} 
+            onToggleComplete={onToggleComplete}
+            onDeleteTask={onDeleteTask}
+            accentColor="border-rose-500/50"
+          />
+          <Timetable 
+            title="Bills & Reminders: Next Week" 
+            tasks={nextWeekTasks} 
+            onToggleComplete={onToggleComplete}
+            onDeleteTask={onDeleteTask}
+            accentColor="border-orange-500/50"
+          />
+          <Timetable 
+            title="Bills & Reminders: This Month" 
+            tasks={thisMonthTasks} 
             onToggleComplete={onToggleComplete}
             onDeleteTask={onDeleteTask}
             accentColor="border-indigo-500/50"

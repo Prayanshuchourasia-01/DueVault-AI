@@ -125,18 +125,19 @@ function App() {
     toggleComplete(taskId);
   };
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col md:flex-row print:bg-white print:text-black">
       <ToastContainer />
       
       {/* Sidebar Navigation */}
-      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div className="print:hidden h-full">
+        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 print:p-0 print:h-auto print:overflow-visible">
         
         {/* Mobile Header (Hidden on Desktop) */}
-        <div className="md:hidden flex justify-center items-center mb-6 pt-2">
+        <div className="md:hidden flex justify-center items-center mb-6 pt-2 print:hidden">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent">
             DueVault AI
           </h1>
@@ -197,6 +198,7 @@ function App() {
         {activeTab === 'vault' && (
           <VaultTab 
             tasks={tasks}
+            onAddTask={addTask}
             onToggleComplete={handleToggleComplete}
             onDeleteTask={deleteTask}
             onEditTask={(t) => setEditingTask(t)}

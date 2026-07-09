@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export const useNotifications = () => {
   const [permission, setPermission] = useState('default');
@@ -6,9 +6,12 @@ export const useNotifications = () => {
   useEffect(() => {
     if ('Notification' in window) {
       setPermission(Notification.permission);
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().then(p => setPermission(p));
-      }
+    }
+  }, []);
+
+  const askPermission = useCallback(() => {
+    if ('Notification' in window) {
+      Notification.requestPermission().then(p => setPermission(p));
     }
   }, []);
 
@@ -26,5 +29,5 @@ export const useNotifications = () => {
     }
   };
 
-  return { sendNotification, permission };
+  return { sendNotification, permission, askPermission };
 };
