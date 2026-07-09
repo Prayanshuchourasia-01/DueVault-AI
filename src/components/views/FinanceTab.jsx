@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Wallet, TrendingDown, TrendingUp, DollarSign, Plus, Trash2, CalendarDays, Activity, PieChart, ShieldCheck } from 'lucide-react';
+import { Wallet, TrendingDown, TrendingUp, DollarSign, Plus, Trash2, CalendarDays, Activity, PieChart, ShieldCheck, Eye, EyeOff, BarChart3, X } from 'lucide-react';
 import { useFinances } from '../../hooks/useFinances';
 
 const FinanceTab = ({ tasks }) => {
-  const { finances, addTransaction, deleteTransaction, updateWalletBalance, setBudgetLimit } = useFinances();
+  const { finances, addTransaction, deleteTransaction, updateWalletBalance, setBudgetLimit, toggleWalletVisibility, setWalletSpendLimit, addGoal, updateGoal, deleteGoal } = useFinances();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [txType, setTxType] = useState('EXPENSE'); // 'EXPENSE' or 'INCOME'
   
   const [newTx, setNewTx] = useState({ 
@@ -32,7 +33,7 @@ const FinanceTab = ({ tasks }) => {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // Safe-To-Spend Calculation
-  const totalBalance = Object.values(finances.wallets).reduce((sum, w) => sum + w.balance, 0);
+  const totalBalance = Object.values(finances.wallets).filter(w => !w.isHidden).reduce((sum, w) => sum + w.balance, 0);
   
   const upcomingBillsCost = upcomingBills.reduce((sum, bill) => {
     // Attempt to extract a rupee/dollar amount from the bill title (e.g., "Pay Rent ₹500" or "Rs 500")
@@ -68,22 +69,8 @@ const FinanceTab = ({ tasks }) => {
   const handleAddGoal = (e) => {
     e.preventDefault();
     if (!newGoal.name || !newGoal.target) return;
-    const updatedGoals = [...(finances.goals || []), { ...newGoal, id: Date.now().toString() }];
-    localStorage.setItem('duevault_finances', JSON.stringify({ ...finances, goals: updatedGoals }));
+    addGoal(newGoal);
     setNewGoal({ name: '', target: '', current: 0 });
-    window.location.reload(); // Simple reload to sync state
-  };
-
-  const updateGoal = (id, amount) => {
-    const updatedGoals = (finances.goals || []).map(g => g.id === id ? { ...g, current: parseFloat(amount) || 0 } : g);
-    localStorage.setItem('duevault_finances', JSON.stringify({ ...finances, goals: updatedGoals }));
-    window.location.reload();
-  };
-
-  const deleteGoal = (id) => {
-    const updatedGoals = (finances.goals || []).filter(g => g.id !== id);
-    localStorage.setItem('duevault_finances', JSON.stringify({ ...finances, goals: updatedGoals }));
-    window.location.reload();
   };
 
   const budgetPercent = Math.min((finances.monthlyBudget.spent / finances.monthlyBudget.limit) * 100, 100);
@@ -103,12 +90,20 @@ const FinanceTab = ({ tasks }) => {
           <p className="text-slate-400 mt-2">Professional tracking for your net worth, budget, and liquidity.</p>
         </div>
         
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-        >
-          <Plus className="w-5 h-5" /> Log Transaction
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setShowReportModal(true)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+          >
+            <BarChart3 className="w-5 h-5" /> Report
+          </button>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+          >
+            <Plus className="w-5 h-5" /> Log Transaction
+          </button>
+        </div>
       </div>
 
       {/* Top Metrics Row */}
@@ -188,17 +183,38 @@ const FinanceTab = ({ tasks }) => {
             </h3>
             <div className="space-y-3">
               {Object.values(finances.wallets).map(wallet => (
-                <div key={wallet.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 hover:bg-slate-800/80 transition-colors">
-                  <span className="font-medium text-slate-300">{wallet.name}</span>
-                  <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700">
-                    <span className="text-slate-500">₹</span>
-                    <input 
-                      type="number" 
-                      value={wallet.balance} 
-                      onChange={(e) => updateWalletBalance(wallet.id, e.target.value)}
-                      className="w-20 bg-transparent text-right font-mono font-bold text-white focus:outline-none focus:text-emerald-400"
-                    />
+                <div key={wallet.id} className={`p-3 rounded-xl border transition-colors ${wallet.isHidden ? 'bg-slate-900/50 border-slate-800/50 opacity-60' : 'bg-slate-800/30 border-slate-700/50 hover:bg-slate-800/80'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => toggleWalletVisibility(wallet.id)} className="text-slate-500 hover:text-cyan-400 transition-colors">
+                        {wallet.isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                      <span className="font-medium text-slate-300">{wallet.name} {wallet.isHidden && '(Hidden)'}</span>
+                    </div>
+                    <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700">
+                      <span className="text-slate-500">₹</span>
+                      <input 
+                        type="number" 
+                        value={wallet.balance} 
+                        onChange={(e) => updateWalletBalance(wallet.id, e.target.value)}
+                        className="w-20 bg-transparent text-right font-mono font-bold text-white focus:outline-none focus:text-emerald-400"
+                      />
+                    </div>
                   </div>
+                  {!wallet.isHidden && (
+                    <div className="flex justify-between items-center text-xs mt-2 border-t border-slate-700/50 pt-2">
+                      <span className="text-slate-500">Spend Limit:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-600">₹</span>
+                        <input 
+                          type="number" 
+                          value={wallet.spendLimit || 0} 
+                          onChange={(e) => setWalletSpendLimit(wallet.id, e.target.value)}
+                          className="w-16 bg-transparent text-right font-mono text-cyan-400 focus:outline-none border-b border-transparent focus:border-cyan-500"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -383,6 +399,48 @@ const FinanceTab = ({ tasks }) => {
                 <button type="submit" className={`px-5 py-2.5 rounded-xl font-bold text-white transition-all ${txType === 'INCOME' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'}`}>Save Transaction</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setShowReportModal(false)} />
+          <div className="relative bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <PieChart className="w-5 h-5 text-indigo-400" /> Spending Report
+              </h3>
+              <button onClick={() => setShowReportModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                {Object.entries((finances.transactions || []).filter(tx => tx.type === 'EXPENSE').reduce((acc, tx) => {
+                  acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
+                  return acc;
+                }, {})).sort((a, b) => b[1] - a[1]).map(([cat, amount], idx) => {
+                  const totalSpent = (finances.transactions || []).filter(tx => tx.type === 'EXPENSE').reduce((sum, tx) => sum + tx.amount, 0);
+                  const percent = totalSpent === 0 ? 0 : (amount / totalSpent) * 100;
+                  return (
+                    <div key={cat} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-bold text-slate-300 uppercase">{cat}</span>
+                        <span className="text-red-400 font-mono">₹{amount.toFixed(2)}</span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2">
+                        <div className={`h-full rounded-full ${idx === 0 ? 'bg-indigo-500' : 'bg-slate-500'}`} style={{ width: `${percent}%` }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {((finances.transactions || []).filter(tx => tx.type === 'EXPENSE').length === 0) && (
+                  <p className="text-slate-500 text-center italic py-4">No expenses logged yet.</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

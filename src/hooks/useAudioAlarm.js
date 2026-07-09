@@ -5,6 +5,7 @@ export const useAudioAlarm = () => {
   const [alarmContext, setAlarmContext] = useState(null);
   const audioCtxRef = useRef(null);
   const intervalRef = useRef(null);
+  const customAudioRef = useRef(null);
 
   const playModernChime = (ctx) => {
     const playNote = (frequency, delay, duration) => {
@@ -80,14 +81,28 @@ export const useAudioAlarm = () => {
 
   const startAlarm = (toneType = 'modern-chime', context = { title: 'SYSTEM ALARM', message: 'Audio alarms are active.' }) => {
     if (isAlarmPlaying) return;
+    setIsAlarmPlaying(true);
+    setAlarmContext(context);
+    
+    if (toneType === 'custom') {
+      const customData = localStorage.getItem('duevault_custom_ringtone_data');
+      if (customData) {
+        const audio = new Audio(customData);
+        audio.loop = true;
+        audio.play().catch(e => console.error(e));
+        customAudioRef.current = audio;
+        return;
+      } else {
+        toneType = 'modern-chime'; // fallback
+      }
+    }
+
     try {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (!audioCtxRef.current) audioCtxRef.current = new AudioContextClass();
       const ctx = audioCtxRef.current;
       if (ctx.state === 'suspended') ctx.resume();
 
-      setIsAlarmPlaying(true);
-      setAlarmContext(context);
       triggerSequence(ctx, toneType);
       
       const loopTime = toneType === 'soft-pulse' ? 2000 : (toneType === 'urgent-alarm' ? 1000 : 3000);
@@ -99,6 +114,16 @@ export const useAudioAlarm = () => {
   };
 
   const testAlarm = (toneType) => {
+    if (toneType === 'custom') {
+      const customData = localStorage.getItem('duevault_custom_ringtone_data');
+      if (customData) {
+        const audio = new Audio(customData);
+        audio.play().catch(e => console.error(e));
+        return;
+      }
+      toneType = 'modern-chime'; // fallback
+    }
+    
     try {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (!audioCtxRef.current) audioCtxRef.current = new AudioContextClass();
@@ -112,6 +137,10 @@ export const useAudioAlarm = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+    }
+    if (customAudioRef.current) {
+      customAudioRef.current.pause();
+      customAudioRef.current = null;
     }
     setIsAlarmPlaying(false);
     setAlarmContext(null);

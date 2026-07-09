@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 
 const defaultFinances = {
   wallets: {
-    cash: { id: 'cash', name: 'Cash Pocket', balance: 50 },
-    bank1: { id: 'bank1', name: 'Primary Bank (UPI)', balance: 1500 },
-    bank2: { id: 'bank2', name: 'Secondary Bank', balance: 300 },
-    savings: { id: 'savings', name: 'Savings Vault', balance: 5000 }
+    cash: { id: 'cash', name: 'Cash Pocket', balance: 50, isHidden: false, spendLimit: 0 },
+    bank1: { id: 'bank1', name: 'Primary Bank (UPI)', balance: 1500, isHidden: false, spendLimit: 0 },
+    bank2: { id: 'bank2', name: 'Secondary Bank', balance: 300, isHidden: false, spendLimit: 0 },
+    savings: { id: 'savings', name: 'Savings Vault', balance: 5000, isHidden: true, spendLimit: 0 }
   },
   monthlyBudget: { limit: 800, spent: 0, income: 0 },
   transactions: [
@@ -13,7 +13,8 @@ const defaultFinances = {
     { id: 'exp-2', type: 'EXPENSE', title: 'Coffee', amount: 5, date: new Date().toLocaleDateString('en-CA'), sourceWallet: 'cash', category: 'leisure' },
     { id: 'exp-3', type: 'EXPENSE', title: 'AWS Hosting', amount: 12, date: new Date().toLocaleDateString('en-CA'), sourceWallet: 'bank2', category: 'bills' },
     { id: 'inc-1', type: 'INCOME', title: 'Salary', amount: 3000, date: new Date().toLocaleDateString('en-CA'), sourceWallet: 'bank1', category: 'salary' }
-  ]
+  ],
+  goals: []
 };
 
 export const useFinances = () => {
@@ -129,11 +130,57 @@ export const useFinances = () => {
     }));
   };
 
+  const toggleWalletVisibility = (walletId) => {
+    setFinances(prev => ({
+      ...prev,
+      wallets: {
+        ...prev.wallets,
+        [walletId]: { ...prev.wallets[walletId], isHidden: !prev.wallets[walletId].isHidden }
+      }
+    }));
+  };
+
+  const setWalletSpendLimit = (walletId, newLimit) => {
+    setFinances(prev => ({
+      ...prev,
+      wallets: {
+        ...prev.wallets,
+        [walletId]: { ...prev.wallets[walletId], spendLimit: Number(newLimit) }
+      }
+    }));
+  };
+
+  const addGoal = (goal) => {
+    setFinances(prev => ({
+      ...prev,
+      goals: [...(prev.goals || []), { ...goal, id: Date.now().toString() }]
+    }));
+  };
+
+  const updateGoal = (id, amount) => {
+    setFinances(prev => ({
+      ...prev,
+      goals: (prev.goals || []).map(g => g.id === id ? { ...g, current: parseFloat(amount) || 0 } : g)
+    }));
+  };
+
+  const deleteGoal = (id) => {
+    setFinances(prev => ({
+      ...prev,
+      goals: (prev.goals || []).filter(g => g.id !== id)
+    }));
+  };
+
   return {
     finances,
     addTransaction,
     deleteTransaction,
     updateWalletBalance,
-    setBudgetLimit
+    toggleWalletVisibility,
+    setWalletSpendLimit,
+    setBudgetLimit,
+    addGoal,
+    updateGoal,
+    deleteGoal
   };
 };

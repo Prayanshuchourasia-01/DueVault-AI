@@ -47,6 +47,19 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
     a.click();
   };
 
+  const handleCustomRingtoneUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      localStorage.setItem('duevault_custom_ringtone_data', event.target.result);
+      setRingtone('custom');
+      setSavedMessage('Custom ringtone loaded! Click Save Settings to apply.');
+      setTimeout(() => setSavedMessage(''), 3000);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleImportData = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -71,7 +84,8 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
   const ringtones = [
     { id: 'modern-chime', label: 'Modern Chime', desc: 'Gentle cascading sine wave melody.' },
     { id: 'soft-pulse', label: 'Soft Pulse', desc: 'Slow, pulsing low-pass triangle wave.' },
-    { id: 'urgent-alarm', label: 'Urgent Alarm', desc: 'Fast-paced, high-attention double beep.' }
+    { id: 'urgent-alarm', label: 'Urgent Alarm', desc: 'Fast-paced, high-attention double beep.' },
+    { id: 'custom', label: 'Custom Audio', desc: 'Your uploaded ringtone.' }
   ];
 
   return (
@@ -144,6 +158,20 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
                 </button>
               </label>
             ))}
+            
+            <div className="pt-2 border-t border-slate-800">
+              <label className="flex items-center justify-between p-4 rounded-xl border border-dashed border-slate-700 bg-slate-800/30 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-colors">
+                <div>
+                  <p className="font-semibold text-white text-sm">Upload Custom Audio</p>
+                  <p className="text-xs text-slate-400 mt-1">Select an MP3, WAV, or OGG file.</p>
+                </div>
+                <div className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                  <UploadCloud className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs font-bold text-slate-300">Browse...</span>
+                </div>
+                <input type="file" accept="audio/*" className="hidden" onChange={handleCustomRingtoneUpload} />
+              </label>
+            </div>
           </div>
         </div>
 

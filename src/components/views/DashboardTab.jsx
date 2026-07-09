@@ -37,6 +37,8 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
         const rTitle = exception?.title || r.title;
         const rCat = exception?.category || r.category;
 
+        const isCompleted = exception?.completed || false;
+
         weekTasks.push({
           id: `routine-spawn-${r.id}-${targetDateStr}`,
           title: rTitle,
@@ -45,7 +47,7 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
           start: combineDateAndTime(targetDateStr, rStart),
           end: combineDateAndTime(targetDateStr, rEnd),
           priority: 'MEDIUM',
-          completed: false,
+          completed: isCompleted,
           isRoutine: true
         });
       });
