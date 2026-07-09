@@ -206,7 +206,7 @@ function App() {
           )}
 
           {activeTab === 'finances' && (
-            <FinanceTab tasks={tasks} />
+            <FinanceTab tasks={tasks} sendNotification={sendNotification} />
           )}
 
           {activeTab === 'settings' && (

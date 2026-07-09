@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 
 const defaultFinances = {
   wallets: {
-    cash: { id: 'cash', name: 'Cash Pocket', balance: 50, isHidden: false, spendLimit: 0 },
-    bank1: { id: 'bank1', name: 'Primary Bank (UPI)', balance: 1500, isHidden: false, spendLimit: 0 },
-    bank2: { id: 'bank2', name: 'Secondary Bank', balance: 300, isHidden: false, spendLimit: 0 },
-    savings: { id: 'savings', name: 'Savings Vault', balance: 5000, isHidden: true, spendLimit: 0 }
+    cash: { id: 'cash', name: 'Cash Pocket', balance: 120, startingBalance: 120, isHidden: false, spendLimit: 37, limitEnabled: true },
+    bank1: { id: 'bank1', name: 'Primary Bank (UPI)', balance: 102, startingBalance: 100, isHidden: false, spendLimit: 100, limitEnabled: true },
+    bank2: { id: 'bank2', name: 'Secondary Bank', balance: -420, startingBalance: 0, isHidden: false, spendLimit: 0, limitEnabled: false },
+    savings: { id: 'savings', name: 'Savings Vault', balance: 5000, startingBalance: 5000, isHidden: true, spendLimit: 0, limitEnabled: false }
   },
   monthlyBudget: { limit: 800, spent: 0, income: 0 },
   weeklyBudget: { limit: 200, spent: 0, income: 0 },
@@ -16,7 +16,8 @@ const defaultFinances = {
     { id: 'inc-1', type: 'INCOME', title: 'Salary', amount: 3000, date: new Date().toLocaleDateString('en-CA'), sourceWallet: 'bank1', category: 'salary' }
   ],
   goals: [],
-  reports: []
+  reports: [],
+  lastResetWeek: ''
 };
 
 export const useFinances = () => {
@@ -142,6 +143,91 @@ export const useFinances = () => {
     }));
   };
 
+  const updateWalletStartingBalance = (walletId, newStartingBalance) => {
+    setFinances(prev => ({
+      ...prev,
+      wallets: {
+        ...prev.wallets,
+        [walletId]: { ...prev.wallets[walletId], startingBalance: Number(newStartingBalance) }
+      }
+    }));
+  };
+
+  const addWallet = (name, balance, isHidden = false, spendLimit = 0, limitEnabled = false) => {
+    const id = 'wallet-' + Date.now().toString();
+    const newWallet = {
+      id,
+      name,
+      balance: Number(balance),
+      startingBalance: Number(balance),
+      isHidden,
+      spendLimit: Number(spendLimit),
+      limitEnabled
+    };
+    setFinances(prev => ({
+      ...prev,
+      wallets: {
+        ...prev.wallets,
+        [id]: newWallet
+      }
+    }));
+  };
+
+  const deleteWallet = (walletId) => {
+    setFinances(prev => {
+      const nextWallets = { ...prev.wallets };
+      delete nextWallets[walletId];
+      return {
+        ...prev,
+        wallets: nextWallets
+      };
+    });
+  };
+
+  const getWeekIdentifier = (date) => {
+    const d = new Date(date);
+    d.setHours(0,0,0,0);
+    const day = d.getDay() || 7;
+    d.setDate(d.getDate() + 4 - day);
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getFullYear()}-W${weekNo}`;
+  };
+
+  const resetWalletsToStarting = () => {
+    setFinances(prev => {
+      const nextWallets = {};
+      Object.keys(prev.wallets).forEach(k => {
+        nextWallets[k] = {
+          ...prev.wallets[k],
+          balance: prev.wallets[k].startingBalance
+        };
+      });
+      return {
+        ...prev,
+        wallets: nextWallets,
+        lastResetWeek: getWeekIdentifier(new Date())
+      };
+    });
+  };
+
+  const dismissResetWeek = () => {
+    setFinances(prev => ({
+      ...prev,
+      lastResetWeek: getWeekIdentifier(new Date())
+    }));
+  };
+
+  const setWalletLimitEnabled = (walletId, enabled) => {
+    setFinances(prev => ({
+      ...prev,
+      wallets: {
+        ...prev.wallets,
+        [walletId]: { ...prev.wallets[walletId], limitEnabled: enabled }
+      }
+    }));
+  };
+
   const setBudgetLimit = (limit) => {
     setFinances(prev => ({
       ...prev,
@@ -211,6 +297,13 @@ export const useFinances = () => {
     updateWalletBalance,
     toggleWalletVisibility,
     setWalletSpendLimit,
+    setWalletLimitEnabled,
+    updateWalletStartingBalance,
+    addWallet,
+    deleteWallet,
+    resetWalletsToStarting,
+    dismissResetWeek,
+    getWeekIdentifier,
     setBudgetLimit,
     setWeeklyLimit,
     saveReport,
