@@ -93,7 +93,9 @@ export const Timetable = ({
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
                       <span className="flex items-center gap-0.5 font-mono text-slate-400">
                         <Clock className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                        {new Date(task.start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {new Date(task.end).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        {task.date !== new Date().toLocaleDateString('en-CA') && <span className="text-indigo-400 font-bold mr-1">{new Date(task.start || task.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                        {task.start ? new Date(task.start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''} 
+                        {task.end ? ` - ${new Date(task.end).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}
                       </span>
                       <span className="text-slate-700">&bull;</span>
                       <span className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">{task.category}</span>

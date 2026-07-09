@@ -11,10 +11,13 @@ import TaskEditModal from './components/TaskEditModal';
 import { AlarmOverlay } from './components/AlarmOverlay';
 import { useSchedule } from './hooks/useSchedule';
 import { useAudioAlarm } from './hooks/useAudioAlarm';
+import { useNotifications } from './hooks/useNotifications';
+import { ToastContainer } from './components/ToastContainer';
 
 function App() {
   const [activeTab, setActiveTab] = useState('focus');
   const [editingTask, setEditingTask] = useState(null);
+  const { sendNotification } = useNotifications();
   
   const { 
     tasks, 
@@ -102,14 +105,35 @@ function App() {
     }
   }, [activeTask, startAlarm, stopAlarm]);
 
+  // Handle active task start notification
+  const prevActiveTaskRef = React.useRef(null);
+  useEffect(() => {
+    if (activeTask && (!prevActiveTaskRef.current || prevActiveTaskRef.current.id !== activeTask.id)) {
+      sendNotification("Block Started", `${activeTask.title} is now active.`);
+    }
+    prevActiveTaskRef.current = activeTask;
+  }, [activeTask, sendNotification]);
+
+  // Wrap toggleComplete to trigger completion notification
+  const handleToggleComplete = (taskId) => {
+    const task = tasks.find(t => t.id === taskId) || routines.find(r => r.id === taskId) || todaysRoutines.find(r => r.id === taskId);
+    // Note: routines might not have 'completed' directly before toggle, but if we toggle it, we assume completion if it wasn't
+    const isCompleted = task?.completed;
+    if (task && !isCompleted) {
+      sendNotification("Task Completed", `Excellent work finishing: ${task.title}`);
+    }
+    toggleComplete(taskId);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col md:flex-row">
+      <ToastContainer />
       
       {/* Sidebar Navigation */}
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Main Content Area */}
-      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8">
+      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
         
         {/* Mobile Header (Hidden on Desktop) */}
         <div className="md:hidden flex justify-center items-center mb-6 pt-2">
@@ -147,14 +171,14 @@ function App() {
             activeTask={activeTask}
             nextTask={nextTask}
             onAddTask={addTask}
-            onToggleComplete={toggleComplete}
+            onToggleComplete={handleToggleComplete}
             onDeleteTask={deleteTask}
             startAlarm={startAlarm}
           />
         )}
         
         {activeTab === 'dashboard' && (
-          <DashboardTab tasks={tasks} routines={routines} onToggleComplete={toggleComplete} />
+          <DashboardTab tasks={tasks} routines={routines} onToggleComplete={handleToggleComplete} />
         )}
 
         {activeTab === 'timetable' && (
@@ -173,7 +197,7 @@ function App() {
         {activeTab === 'vault' && (
           <VaultTab 
             tasks={tasks}
-            onToggleComplete={toggleComplete}
+            onToggleComplete={handleToggleComplete}
             onDeleteTask={deleteTask}
             onEditTask={(t) => setEditingTask(t)}
           />

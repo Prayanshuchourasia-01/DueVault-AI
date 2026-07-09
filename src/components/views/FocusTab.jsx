@@ -27,18 +27,24 @@ const FocusTab = ({
 
   const excludedCategories = ['finance', 'chores', 'life', 'vault', 'admin', 'personal'];
 
-  // Apply routing heuristic for Academic vs Life
-  let academicTasks = allTodayItems.filter(t => !excludedCategories.includes(t.category?.toLowerCase()) || t.isRoutine);
-  let lifeTasks = allTodayItems.filter(t => excludedCategories.includes(t.category?.toLowerCase()) && !t.isRoutine);
+  // 1. Academic & Focus: Today's upcoming routine & academic tasks (Limit to Next 5)
+  let academicTasks = allTodayItems
+    .filter(t => !excludedCategories.includes(t.category?.toLowerCase()) || t.isRoutine)
+    .filter(t => t.id !== activeTask?.id && new Date(t.end) > nowTime)
+    .sort((a, b) => new Date(a.start) - new Date(b.start))
+    .slice(0, 5);
 
-  // Remove the currently active task from the lists, and only show future tasks
-  academicTasks = academicTasks
-    .filter(t => t.id !== activeTask?.id && new Date(t.end) > nowTime)
-    .sort((a, b) => new Date(a.start) - new Date(b.start));
-    
-  lifeTasks = lifeTasks
-    .filter(t => t.id !== activeTask?.id && new Date(t.end) > nowTime)
-    .sort((a, b) => new Date(a.start) - new Date(b.start));
+  // 2. Life & Vault (Strategic Foresight): Upcoming Bills & Reminders
+  let lifeTasks = tasks
+    .filter(t => {
+      if (t.completed || t.id === activeTask?.id) return false;
+      const isBillOrFinance = ['finance', 'bill'].includes(t.category?.toLowerCase());
+      const hasReminder = t.reminderDays && t.reminderDays.length > 0;
+      const isFuture = new Date(t.end || t.date) > nowTime;
+      return (isBillOrFinance || hasReminder) && isFuture;
+    })
+    .sort((a, b) => new Date(a.start || a.date) - new Date(b.start || b.date))
+    .slice(0, 6);
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-6">
@@ -64,10 +70,10 @@ const FocusTab = ({
           />
         </div>
 
-        {/* Column 3: Life & Vault Timetable */}
+        {/* Column 3: Upcoming Bills & Reminders */}
         <div className="lg:col-span-1">
           <Timetable 
-            title="Life & Vault" 
+            title="Upcoming Bills & Reminders" 
             tasks={lifeTasks} 
             onToggleComplete={onToggleComplete}
             onDeleteTask={onDeleteTask}
