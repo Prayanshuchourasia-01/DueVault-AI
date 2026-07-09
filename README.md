@@ -2,120 +2,132 @@
 
 ![DueVault AI Preview](./src/assets/focus.png)
 
-**DueVault AI** is a privacy-first, fully localized AI productivity dashboard and engineering workflow engine. It leverages the power of Gemini to act as your personal project manager—parsing plain text commands and messy HTML schedules into actionable timelines, Pomodoro sessions, and deep-work analytics.
+**DueVault AI** is a privacy-first, fully localized AI productivity dashboard and engineering workflow engine. It leverages Gemini to act as a personal project manager—parsing plain text commands and messy HTML schedules into actionable timelines, focus slots, dynamic budgets, and deep-work analytics.
 
 > **Built using Vibe Coding for the Google 5 Days AI Course.**
 
 ---
 
-## 🛠️ Application Workflow
+## 🛠️ Application Architecture & Workflow
 
-DueVault AI is designed to eliminate context switching by routing your tasks intelligently into designated zones.
+DueVault AI uses a fully local data flow to eliminate context switching, routing tasks, and transaction ledgers to their respective interactive HUD modules.
 
 ```mermaid
-graph TD;
-    A[User Input] --> B{Gemini AI Engine};
-    B -->|Parses Category| C[Academic / Focus Task];
-    B -->|Parses Category| D[Life / Vault Task];
+flowchart TD
+    %% Inputs
+    Input1[Natural Language Text Command] --> |Gemini AI Parser| Schema[Structured Task Schema]
+    Input2[HTML Timetable File] --> |HTML Parser Engine| Routines[Local Daily Routines]
+    Input3[Manual Inputs] --> |Quick Log Forms| Schema
+
+    %% Processing & Storage
+    Schema --> LS[(Local Storage DB)]
+    Routines --> LS
     
-    C --> E[Focus HUD & Timer];
-    C --> F[Academic Timeline];
-    
-    D --> G[Life Vault Database];
-    
-    H[HTML Timetable Import] --> I[Local Storage Routine Engine];
-    I --> F;
+    %% Views / HUD Modules
+    LS --> |Filters Academic Slots| HUD[Focus Tab HUD]
+    LS --> |Filters Non-Academic Tasks| Vault[Life & Vault Column]
+    LS --> |Aggregates Week/Month Transactions| Finance[Financial Control Center]
+    LS --> |Computes Hours & Active Pipeline| Dash[Analytics Dashboard]
+
+    %% Interactions
+    HUD --> |Radial Timer / Complete| Success[Emerald Finish Screen]
+    Finance --> |Spend Limit Breach| Push[System Toast Notification]
+    Finance --> |Export Ledger| CSV[CSV / PDF Report]
 ```
 
-### 1. The Input Phase
-You can interact with DueVault AI in two primary ways:
-*   **Natural Language Entry:** Type complex commands like *"I have an advanced AI lab due tomorrow at 4 PM."* The Gemini parser instantly extracts the deadline, duration, category, and priority.
-*   **HTML DOM Parsing:** Paste the raw HTML of your university portal schedule. The system crawls the document, identifies recurring patterns, and spawns local daily routines automatically.
+### 1. Unified Processing (The Input Phase)
+- **Natural Language Parsing:** Input phrases like *"Advanced ML Lab tomorrow at 2pm"* are mapped using Gemini into precise JSON schemas containing dates, categories, reminders, and priorities.
+- **HTML Crawling:** Paste raw HTML code directly from your university student portal. The system crawls structure, detects timeslots, and registers recurring routine spawns.
 
-### 2. The Execution Phase (Focus HUD)
-*   The **Focus HUD** takes your most critical Academic and Engineering tasks and locks them into an immersive, radial countdown timer. 
-*   If your active block is "Study," the Pomodoro visualizer pulses. If it's "Life Admin" or a "Wifi Bill," the HUD ignores it so you aren't distracted while coding.
+### 2. High-Performance Interfaces (The Execution Phase)
+- **Focus HUD & Timetable:** Academic tasks and routines are lined up sequentially. The active slot controls an immersive countdown clock. When all tasks are completed, the interface transitions to an emerald finish screen.
+- **Strategic Vault Column:** Collates all non-academic reminders, chores, and personal tasks, sorting them into clear action horizons (*This Week*, *Next Week*, *This Month*) with automated cutoff times.
 
-### 3. The Analytics Phase (Engineering Dashboard)
-*   As you check off tasks and complete routines, the **Engineering Analytics Dashboard** calculates your Deep Work density versus Administrative Overhead for the next 7 days.
-*   Your progress is tracked entirely locally.
+### 3. Financial Control Center
+- **Dynamic Timeframe Switcher:** Toggle between *Current Week*, *Previous Week*, and *Previous Month* to dynamically update total liquid net worth, safe-to-spend estimations, and outflows.
+- **Managed Accounts:** Custom account creation with weekly default start baseline resets, toggleable spend limits, warning badges, and automatic notifications on limit breaches.
+
+### 4. Engineering Analytics Dashboard
+- **Pipeline Pipeline:** A draggable scrolling timeline showing upcoming blocks, highlighting the active slot, and flagging overdue unfinished items as `TIME OVER`.
+- **Deep Work Density:** Automatically computes hours logged on technical tasks versus routine overhead.
 
 ---
 
 ## 🌟 Key Features
 
-*   **🧠 AI Input Engine:** Instantly parses natural language into rigid JSON schemas.
-*   **🕒 Focus HUD & Pomodoro:** A highly visual, dynamic radial timer that hijacks your screen for deep-work blocks. 
-*   **📊 Engineering Analytics Dashboard:** Track your daily completion rates and see a live pipeline of your upcoming week.
-*   **📅 AI Timetable Import:** Copy and paste messy HTML directly from your university portal to build recurring routines.
-*   **🗄️ Life Vault & Finances:** A dedicated master database to track non-academic chores and upcoming bills. 
-*   **🔒 Privacy-First Architecture:** No backend databases. No cloud syncing. Everything from your API keys to your personal schedule is stored 100% locally in your browser.
+*   **🧠 Gemini AI Input Engine:** Converts messy text entries into JSON schemas.
+*   **🕒 Focus HUD & Countdown:** Focus timer tracking study slots.
+*   **📊 Draggable Pipeline HUD:** Horizontal interactive timeline scrolling directly to the active task.
+*   **📅 AI HTML Importer:** Instantly import student portal tables into clean schedules.
+*   **💼 Financial Control Center:** Custom account tracking, week starting resets, and limit breach alerts.
+*   **📄 Print/PDF Reports:** Generates professional financial statement reports ready to print or save.
+*   **🔒 100% Private & Local:** No cloud sync, no databases, everything runs inside the browser.
 
 ---
 
 ## 📸 Screenshots & Previews
 
 <div align="center">
-  <h3>Focus HUD & Pomodoro</h3>
+  <h3>Focus HUD & Academic Timeline</h3>
   <img src="./src/assets/focus.png" alt="Focus HUD" width="800" />
-  <p><i>The central Focus HUD tracking an active coding session, filtering out non-academic distractions.</i></p>
+  <p><i>The Focus HUD tracking your academic tasks alongside dynamic Vault cards.</i></p>
 
   <br/>
 
   <h3>Engineering Analytics Dashboard</h3>
   <img src="./src/assets/dashboard.png" alt="Analytics Dashboard" width="800" />
-  <p><i>Live tracking of Deep Work versus Administrative Overhead, showing the upcoming 7-day pipeline.</i></p>
+  <p><i>Draggable timeline displaying ongoing work blocks and Deep Work metrics.</i></p>
+
+  <br/>
+
+  <h3>Financial Control Center</h3>
+  <img src="./src/assets/finances.png" alt="Finances Dashboard" width="800" />
+  <p><i>Dynamic week/month timeframe switcher, spend limits tracker, and managed accounts.</i></p>
 
   <br/>
 
   <h3>Life Vault & Database</h3>
-  <img src="./src/assets/vault.png" alt="The Vault" width="800" />
-  <p><i>The centralized master database for chores, bills, and one-off tasks split into 'This Week' and 'Upcoming'.</i></p>
+  <img src="./src/assets/vault.png" alt="Life Vault" width="800" />
+  <p><i>Consolidated vault database showing classified task lists.</i></p>
 
   <br/>
 
-  <h3>AI Timetable Import</h3>
+  <h3>HTML Timetable Parser</h3>
   <img src="./src/assets/timetable.png" alt="Timetable Importer" width="800" />
-  <p><i>The raw HTML parsing engine translating messy university schedules into structured routines.</i></p>
+  <p><i>Parse raw schedule HTML code directly into recurring routines.</i></p>
 </div>
 
 ---
 
 ## 💻 Tech Stack
 
-*   **Frontend Framework:** React + Vite
-*   **Styling:** Vanilla CSS & Tailwind CSS for utility wrappers
+*   **Core:** React.js + Vite
+*   **Styling:** Vanilla CSS + Tailwind CSS utility wrappers
 *   **Icons:** Lucide React
-*   **AI Integration:** `@google/genai` (Gemini API)
-*   **State Management:** React Hooks + LocalStorage API
+*   **AI Engine:** `@google/genai` (Gemini API)
+*   **Database:** Web Storage API (LocalStorage)
 
 ---
 
 ## 🚀 Getting Started
 
-To run this project locally on your machine:
+To run DueVault AI locally on your system:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/duevault-ai.git
+   git clone https://github.com/Prayanshuchourasia-01/DueVault-AI.git
    ```
-2. Navigate to the project directory:
+2. Navigate to the directory:
    ```bash
-   cd duevault-ai
+   cd DueVault-AI
    ```
-3. Install dependencies:
+3. Install the dependencies:
    ```bash
    npm install
    ```
-4. Start the development server:
+4. Start the Vite hot-reloading dev server:
    ```bash
    npm run dev
    ```
-5. Open your browser to `http://localhost:5173`.
-6. On first launch, click the **Settings ⚙️** icon and paste your Gemini API Key. It will be securely saved in your browser's local storage.
-
----
-
-## 🎓 About
-
-This project was rapidly prototyped and developed through **vibe coding** as the capstone project for the **Google 5 Days AI Course**. It demonstrates the power of utilizing LLMs to aggressively structure unstructured data (like conversational text and raw HTML) into highly rigorous, interactive local applications.
+5. Open your browser and navigate to `http://localhost:5173`.
+6. Open **Settings ⚙️** and save your Gemini API Key to enable natural language parsing.
