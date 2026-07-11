@@ -1,7 +1,7 @@
 import React from 'react';
-import { Home, CalendarDays, Vault, Settings, Orbit, Wallet, CalendarClock } from 'lucide-react';
+import { Home, CalendarDays, Vault, Settings, Orbit, Wallet, CalendarClock, Sun, Moon } from 'lucide-react';
 
-const Navigation = ({ activeTab, setActiveTab }) => {
+const Navigation = ({ activeTab, setActiveTab, theme, setTheme }) => {
   const navItems = [
     { id: 'focus', icon: Home, label: 'Focus HUD' },
     { id: 'dashboard', icon: CalendarDays, label: 'Dashboard' },
@@ -28,7 +28,7 @@ const Navigation = ({ activeTab, setActiveTab }) => {
       </div>
 
       {/* Nav Links */}
-      <div className="flex md:flex-col w-full justify-around md:justify-start gap-2">
+      <div className="flex md:flex-col w-full justify-around md:justify-start gap-2 flex-1">
         {navItems.map(item => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -47,6 +47,21 @@ const Navigation = ({ activeTab, setActiveTab }) => {
             </button>
           );
         })}
+      </div>
+
+      {/* Theme Toggle (Mobile & Desktop) */}
+      <div className="w-full md:mt-auto pt-2 border-t border-slate-800/50 md:border-t-0 flex justify-center md:justify-start">
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="flex flex-col md:flex-row items-center md:justify-start gap-1 md:gap-3 p-2 md:p-3 rounded-xl transition-all duration-300 w-full text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-6 h-6 md:w-5 md:h-5 text-amber-400" />
+          ) : (
+            <Moon className="w-6 h-6 md:w-5 md:h-5 text-indigo-500" />
+          )}
+          <span className="text-[10px] md:text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+        </button>
       </div>
 
     </nav>

@@ -19,6 +19,14 @@ function App() {
   const [editingTask, setEditingTask] = useState(null);
   const { sendNotification } = useNotifications();
 
+  const [theme, setTheme] = useState(() => localStorage.getItem('duevault_theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.classList.remove('light-theme', 'dark-theme');
+    document.documentElement.classList.add(`${theme}-theme`);
+    localStorage.setItem('duevault_theme', theme);
+  }, [theme]);
+
   const {
     tasks,
     routines,
@@ -167,12 +175,12 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col md:flex-row print:bg-white print:text-black">
+    <div className={`min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col md:flex-row print:bg-white print:text-black ${theme === 'light' ? 'light-theme' : ''}`}>
         <ToastContainer />
 
         {/* Sidebar Navigation */}
         <div className="print:hidden h-full">
-          <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Navigation activeTab={activeTab} setActiveTab={setActiveTab} theme={theme} setTheme={setTheme} />
         </div>
 
         {/* Main Content Area */}
