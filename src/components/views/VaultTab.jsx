@@ -125,8 +125,13 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
                             <Circle className="w-6 h-6" />
                           </button>
                         </td>
-                        <td className="p-4 font-bold text-white max-w-xs truncate">
+                        <td className="p-4 font-bold text-white max-w-xs">
                           <span>{task.title}</span>
+                          {task.amount !== undefined && (
+                            <span className="inline-block ml-1.5 bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[10px] px-1 py-0.5 rounded font-mono font-bold">
+                              ₹{task.amount}
+                            </span>
+                          )}
                           <div className="text-[10px] text-slate-500 font-mono uppercase mt-1">{task.category}</div>
                         </td>
                         <td className="p-4 text-sm text-slate-400 whitespace-nowrap">
@@ -141,10 +146,10 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
                           </span>
                         </td>
                         <td className="p-4 text-right whitespace-nowrap">
-                          <button onClick={() => onEditTask(task)} className="p-2 text-slate-500 hover:text-indigo-400 transition-colors opacity-0 group-hover:opacity-100">
+                          <button onClick={() => onEditTask(task)} className="p-2 text-slate-500 hover:text-indigo-400 transition-colors">
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => onDeleteTask(task.id)} className="p-2 text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 ml-1">
+                          <button onClick={() => onDeleteTask(task.id)} className="p-2 text-slate-500 hover:text-red-400 transition-colors ml-1">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>

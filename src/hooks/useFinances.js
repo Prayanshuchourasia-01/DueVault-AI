@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 
 const defaultFinances = {
   wallets: {
-    cash: { id: 'cash', name: 'Cash Pocket', balance: 120, startingBalance: 120, isHidden: false, spendLimit: 37, limitEnabled: true },
-    bank1: { id: 'bank1', name: 'Primary Bank (UPI)', balance: 102, startingBalance: 100, isHidden: false, spendLimit: 100, limitEnabled: true },
-    bank2: { id: 'bank2', name: 'Secondary Bank', balance: -420, startingBalance: 0, isHidden: false, spendLimit: 0, limitEnabled: false },
+    cash: { id: 'cash', name: 'Cash Pocket', balance: 115, startingBalance: 120, isHidden: false, spendLimit: 37, limitEnabled: true },
+    bank1: { id: 'bank1', name: 'Primary Bank (UPI)', balance: 3055, startingBalance: 100, isHidden: false, spendLimit: 100, limitEnabled: true },
+    bank2: { id: 'bank2', name: 'Secondary Bank', balance: 488, startingBalance: 500, isHidden: false, spendLimit: 0, limitEnabled: false },
     savings: { id: 'savings', name: 'Savings Vault', balance: 5000, startingBalance: 5000, isHidden: true, spendLimit: 0, limitEnabled: false }
   },
   monthlyBudget: { limit: 800, spent: 0, income: 0 },

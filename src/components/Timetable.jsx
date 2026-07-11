@@ -84,10 +84,15 @@ export const Timetable = ({
                   </button>
 
                   <div className="min-w-0 space-y-0.5">
-                    <h4 className={`text-sm font-extrabold tracking-wide truncate ${
+                    <h4 className={`text-sm font-extrabold tracking-wide flex items-center gap-1 flex-wrap ${
                       task.completed ? 'line-through text-slate-500' : 'text-slate-200'
                     }`}>
-                      {task.title}
+                      <span className="truncate">{task.title}</span>
+                      {task.amount !== undefined && (
+                        <span className="bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[10px] px-1 py-0.5 rounded font-mono font-bold">
+                          ₹{task.amount}
+                        </span>
+                      )}
                     </h4>
                     
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">

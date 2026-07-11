@@ -3,14 +3,17 @@ import { X, Save, Clock, Calendar as CalendarIcon, Tag, AlertTriangle, Bell, Plu
 
 export const TaskAddModal = ({ isOpen, onClose, onSave }) => {
   const todayStr = new Date().toLocaleDateString('en-CA');
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     date: todayStr,
     startTimeStr: '12:00',
     endTimeStr: '13:00',
     priority: 'LOW',
-    category: 'other',
-    reminders: [] // Array of { minutesBefore: Number, type: 'notification' | 'alarm' | 'both' }
+    category: 'study',
+    reminders: [],
+    isBill: false,
+    amount: ''
   });
 
   useEffect(() => {
@@ -21,9 +24,12 @@ export const TaskAddModal = ({ isOpen, onClose, onSave }) => {
         startTimeStr: '12:00',
         endTimeStr: '13:00',
         priority: 'LOW',
-        category: 'other',
-        reminders: []
+        category: 'study',
+        reminders: [],
+        isBill: false,
+        amount: ''
       });
+      setShowCustomCategory(false);
     }
   }, [isOpen]);
 
@@ -37,8 +43,9 @@ export const TaskAddModal = ({ isOpen, onClose, onSave }) => {
       start: formData.startTimeStr,
       end: formData.endTimeStr,
       priority: formData.priority,
-      category: formData.category,
-      reminders: formData.reminders
+      category: formData.isBill ? 'bills' : formData.category,
+      reminders: formData.reminders,
+      amount: formData.isBill && formData.amount ? parseFloat(formData.amount) : undefined
     });
     onClose();
   };
@@ -75,6 +82,26 @@ export const TaskAddModal = ({ isOpen, onClose, onSave }) => {
             />
           </div>
 
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-400">Type</label>
+            <div className="flex bg-slate-950/40 p-1 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, isBill: false, category: 'study'})}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer text-center ${!formData.isBill ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+              >
+                Reminder / Task
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, isBill: true, category: 'bills'})}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer text-center ${formData.isBill ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'text-slate-400 hover:text-white'}`}
+              >
+                Bill / Payment
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
@@ -88,19 +115,77 @@ export const TaskAddModal = ({ isOpen, onClose, onSave }) => {
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
-                <Tag className="w-4 h-4" /> Category
-              </label>
-              <input 
-                type="text" 
-                required
-                placeholder="e.g. study, finance, bills"
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value.toLowerCase()})}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors font-mono uppercase text-xs"
-              />
-            </div>
+            
+            {formData.isBill ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
+                  Amount (₹)
+                </label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  required
+                  placeholder="0.00"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 font-mono text-sm"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
+                  <Tag className="w-4 h-4" /> Category
+                </label>
+                <div className="flex gap-1.5">
+                  {!showCustomCategory ? (
+                    <select
+                      value={formData.category}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setShowCustomCategory(true);
+                          setFormData({...formData, category: ''});
+                        } else {
+                          setFormData({...formData, category: e.target.value});
+                        }
+                      }}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-xs font-bold"
+                    >
+                      <option value="study">Study</option>
+                      <option value="coding">Coding</option>
+                      <option value="class">Class</option>
+                      <option value="lab">Lab</option>
+                      <option value="hackathon">Hackathon</option>
+                      <option value="homework">Homework</option>
+                      <option value="exam">Exam</option>
+                      <option value="chores">Chores</option>
+                      <option value="other">Other</option>
+                      <option value="__custom__">+ Custom...</option>
+                    </select>
+                  ) : (
+                    <div className="flex gap-1.5 w-full">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Category"
+                        value={formData.category}
+                        onChange={(e) => setFormData({...formData, category: e.target.value.toLowerCase()})}
+                        className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-mono uppercase"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCustomCategory(false);
+                          setFormData({...formData, category: 'study'});
+                        }}
+                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg border border-slate-700 text-xs font-bold"
+                      >
+                        List
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

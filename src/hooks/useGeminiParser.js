@@ -16,6 +16,47 @@ export const useGeminiParser = () => {
     }
   };
 
+  const checkRateLimit = () => {
+    const LIMIT = 15; // 15 requests per minute
+    const WINDOW_MS = 60000; // 1 minute
+    const COOLDOWN_MS = 2000; // 2 seconds between individual calls
+    
+    const now = Date.now();
+    const rawTimestamps = localStorage.getItem('duevault_api_timestamps');
+    let timestamps = [];
+    if (rawTimestamps) {
+      try {
+        timestamps = JSON.parse(rawTimestamps);
+      } catch (e) {
+        timestamps = [];
+      }
+    }
+    
+    // Filter for timestamps in the current window
+    const windowStart = now - WINDOW_MS;
+    timestamps = timestamps.filter(t => t > windowStart);
+    
+    // Check cooldown
+    if (timestamps.length > 0) {
+      const lastRequest = timestamps[timestamps.length - 1];
+      if (now - lastRequest < COOLDOWN_MS) {
+        const remainingCooldown = Math.ceil((COOLDOWN_MS - (now - lastRequest)) / 1000);
+        throw new Error(`Rate limit cooldown: Please wait ${remainingCooldown} second(s) before sending another request.`);
+      }
+    }
+    
+    // Check capacity
+    if (timestamps.length >= LIMIT) {
+      const oldestTimestamp = timestamps[0];
+      const timeToWait = Math.ceil((WINDOW_MS - (now - oldestTimestamp)) / 1000);
+      throw new Error(`Rate limit reached: You can make at most ${LIMIT} API calls per minute. Please wait ${timeToWait} seconds before requesting again.`);
+    }
+    
+    // Record current request
+    timestamps.push(now);
+    localStorage.setItem('duevault_api_timestamps', JSON.stringify(timestamps));
+  };
+
   const parseTaskText = async (text) => {
     const apiKey = getApiKey();
 
@@ -46,6 +87,7 @@ Instructions:
 `;
 
     try {
+      checkRateLimit();
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       
       const payload = {
@@ -132,6 +174,7 @@ Instructions:
 `;
 
     try {
+      checkRateLimit();
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       const payload = {
         contents: [{ role: 'user', parts: [{ text: `Extract weekly recurring schedule from HTML: ${htmlText.substring(0, 50000)}` }] }],

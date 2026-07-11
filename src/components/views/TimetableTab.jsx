@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { CalendarClock, Clock, Edit2, Trash2, Copy, ClipboardPaste, Calendar, ArrowRightLeft } from 'lucide-react';
+import { CalendarClock, Clock, Edit2, Trash2, Copy, ClipboardPaste, Calendar, ArrowRightLeft, Plus, X } from 'lucide-react';
 import RoutineEditModal from '../RoutineEditModal';
 
 const TimetableTab = ({ 
   routineTasks, 
   timetableConfig, 
   setTimetableConfig,
+  addRoutine,
   addRoutineException,
   updateRoutineAll,
   deleteRoutine,
@@ -14,6 +15,7 @@ const TimetableTab = ({
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
   const [editingRoutine, setEditingRoutine] = useState(null);
+  const [addingRoutineForDay, setAddingRoutineForDay] = useState(null);
   const [copiedDay, setCopiedDay] = useState(null);
   const [layoutMode, setLayoutMode] = useState('VERTICAL'); // 'VERTICAL' or 'HORIZONTAL'
 
@@ -48,6 +50,16 @@ const TimetableTab = ({
         end: formData.end
       });
     }
+  };
+
+  const handleAddRoutineSave = (formData) => {
+    addRoutine({
+      title: formData.title,
+      category: formData.category,
+      dayOfWeek: formData.dayOfWeek,
+      start: formData.start,
+      end: formData.end
+    });
   };
 
   const handleDelete = (task) => {
@@ -158,13 +170,20 @@ const TimetableTab = ({
                     </h3>
                     <span className="text-[10px] text-slate-500 font-mono mt-0.5">{dayObj.displayStr} {dayObj.isToday && '(Today)'}</span>
                   </div>
-                  <div className="flex gap-1 transition-opacity">
+                  <div className="flex gap-1.5 transition-opacity items-center">
+                    <button 
+                      onClick={() => setAddingRoutineForDay(dayObj.name)}
+                      className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-800/40 transition-colors"
+                      title="Add Repeating Block"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
                     <button 
                       onClick={() => setCopiedDay(dayObj.name)}
                       className={`p-1 rounded ${copiedDay === dayObj.name ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-white'}`}
                       title="Copy Day"
                     >
-                      <Copy className="w-4 h-4" />
+                      <Copy className="w-3.5 h-3.5" />
                     </button>
                     {copiedDay && copiedDay !== dayObj.name && (
                       <button 
@@ -172,7 +191,7 @@ const TimetableTab = ({
                         className="p-1 rounded text-cyan-500 hover:text-cyan-300"
                         title={`Paste ${copiedDay}`}
                       >
-                        <ClipboardPaste className="w-4 h-4" />
+                        <ClipboardPaste className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
@@ -208,7 +227,14 @@ const TimetableTab = ({
                     <p className="text-[10px] text-slate-500 font-mono mt-1">{dayObj.displayStr}</p>
                   </div>
                   
-                  <div className="flex gap-1 transition-opacity mt-0 md:mt-4">
+                  <div className="flex gap-1.5 transition-opacity mt-0 md:mt-4 items-center">
+                    <button 
+                      onClick={() => setAddingRoutineForDay(dayObj.name)} 
+                      className="p-1.5 rounded-lg bg-emerald-950/40 text-emerald-400 border border-emerald-900/30 hover:text-emerald-300"
+                      title="Add Repeating Block"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
                     <button onClick={() => setCopiedDay(dayObj.name)} className={`p-1.5 rounded-lg ${copiedDay === dayObj.name ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400 hover:text-white'}`} title="Copy Day">
                       <Copy className="w-4 h-4" />
                     </button>
@@ -242,12 +268,191 @@ const TimetableTab = ({
         onSave={handleEditSave}
       />
 
+      <RoutineAddModal
+        dayOfWeek={addingRoutineForDay}
+        isOpen={!!addingRoutineForDay}
+        onClose={() => setAddingRoutineForDay(null)}
+        onSave={handleAddRoutineSave}
+      />
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
       `}</style>
+    </div>
+  );
+};
+
+const RoutineAddModal = ({ dayOfWeek, isOpen, onClose, onSave }) => {
+  const [formData, setFormData] = React.useState({
+    title: '',
+    category: 'class',
+    dayOfWeek: dayOfWeek || 'Monday',
+    start: '09:00',
+    end: '10:30'
+  });
+  const [showCustomCategory, setShowCustomCategory] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        title: '',
+        category: 'class',
+        dayOfWeek: dayOfWeek || 'Monday',
+        start: '09:00',
+        end: '10:30'
+      });
+      setShowCustomCategory(false);
+    }
+  }, [dayOfWeek, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
+      
+      <div className="relative bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in">
+        
+        {/* Header */}
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
+          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <Plus className="w-5 h-5 text-emerald-400" />
+            Add Repeating Routine Block
+          </h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-300">Routine Title</label>
+            <input 
+              type="text" 
+              required
+              placeholder="e.g. Data Structures Lecture, OS Lab"
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300">Day of Week</label>
+              <select
+                value={formData.dayOfWeek}
+                onChange={(e) => setFormData({...formData, dayOfWeek: e.target.value})}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm font-semibold"
+              >
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
+                Category
+              </label>
+              <div className="flex gap-1.5">
+                {!showCustomCategory ? (
+                  <select
+                    value={formData.category}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') {
+                        setShowCustomCategory(true);
+                        setFormData({...formData, category: ''});
+                      } else {
+                        setFormData({...formData, category: e.target.value});
+                      }
+                    }}
+                    className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-xs font-bold"
+                  >
+                    <option value="class">Class</option>
+                    <option value="lab">Lab</option>
+                    <option value="study">Study</option>
+                    <option value="coding">Coding</option>
+                    <option value="hackathon">Hackathon</option>
+                    <option value="homework">Homework</option>
+                    <option value="exam">Exam</option>
+                    <option value="chores">Chores</option>
+                    <option value="other">Other</option>
+                    <option value="__custom__">+ Custom...</option>
+                  </select>
+                ) : (
+                  <div className="flex gap-1.5 w-full">
+                    <input
+                      type="text"
+                      required
+                      placeholder="Custom Category"
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value.toLowerCase()})}
+                      className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-mono uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCustomCategory(false);
+                        setFormData({...formData, category: 'class'});
+                      }}
+                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg border border-slate-700 text-xs font-bold"
+                    >
+                      List
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
+                <Clock className="w-4 h-4 text-slate-500" /> Start Time
+              </label>
+              <input 
+                type="time" 
+                required
+                value={formData.start}
+                onChange={(e) => setFormData({...formData, start: e.target.value})}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
+                <Clock className="w-4 h-4 text-slate-500" /> End Time
+              </label>
+              <input 
+                type="time" 
+                required
+                value={formData.end}
+                onChange={(e) => setFormData({...formData, end: e.target.value})}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div className="pt-6 flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800 transition-colors">
+              Cancel
+            </button>
+            <button type="submit" className="px-5 py-2.5 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Add Block
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

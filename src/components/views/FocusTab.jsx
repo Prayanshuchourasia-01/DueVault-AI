@@ -70,11 +70,21 @@ const FocusTab = ({
     return d > endOfNextWeek && d <= endOfThisMonth;
   });
 
+  const hasAcademic = academicTasks.length > 0;
+  const hasLife = thisWeekTasks.length > 0 || nextWeekTasks.length > 0 || thisMonthTasks.length > 0;
+
+  let gridColsClass = "lg:grid-cols-3 max-w-7xl";
+  if (!hasAcademic && !hasLife) {
+    gridColsClass = "lg:grid-cols-1 max-w-2xl";
+  } else if (!hasAcademic || !hasLife) {
+    gridColsClass = "lg:grid-cols-2 max-w-5xl";
+  }
+
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-6">
+    <div className="w-full mx-auto space-y-6 animate-fade-in pb-24 md:pb-6">
       <InputEngine onAddTask={onAddTask} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 mx-auto ${gridColsClass}`}>
         
         {/* Column 1: Focus HUD & Pomodoro */}
         <div className="lg:col-span-1 space-y-6 flex flex-col">
@@ -83,51 +93,50 @@ const FocusTab = ({
         </div>
 
         {/* Column 2: Academic & Focus Timetable */}
-        <div className="lg:col-span-1">
-          <Timetable 
-            title="Academic & Focus" 
-            tasks={academicTasks} 
-            onToggleComplete={onToggleComplete}
-            onDeleteTask={onDeleteTask}
-            accentColor="border-cyan-500/50"
-          />
-        </div>
+        {hasAcademic && (
+          <div className="lg:col-span-1">
+            <Timetable 
+              title="Academic & Focus" 
+              tasks={academicTasks} 
+              onToggleComplete={onToggleComplete}
+              onDeleteTask={onDeleteTask}
+              accentColor="border-cyan-500/50"
+            />
+          </div>
+        )}
 
         {/* Column 3: Upcoming Bills & Reminders */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          {thisWeekTasks.length > 0 && (
-            <Timetable 
-              title="Bills & Reminders: This Week" 
-              tasks={thisWeekTasks} 
-              onToggleComplete={onToggleComplete}
-              onDeleteTask={onDeleteTask}
-              accentColor="border-rose-500/50"
-            />
-          )}
-          {nextWeekTasks.length > 0 && (
-            <Timetable 
-              title="Bills & Reminders: Next Week" 
-              tasks={nextWeekTasks} 
-              onToggleComplete={onToggleComplete}
-              onDeleteTask={onDeleteTask}
-              accentColor="border-orange-500/50"
-            />
-          )}
-          {thisMonthTasks.length > 0 && (
-            <Timetable 
-              title="Bills & Reminders: This Month" 
-              tasks={thisMonthTasks} 
-              onToggleComplete={onToggleComplete}
-              onDeleteTask={onDeleteTask}
-              accentColor="border-indigo-500/50"
-            />
-          )}
-          {thisWeekTasks.length === 0 && nextWeekTasks.length === 0 && thisMonthTasks.length === 0 && (
-            <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 text-center py-12 text-slate-500">
-              No upcoming bills or reminders scheduled.
-            </div>
-          )}
-        </div>
+        {hasLife && (
+          <div className="lg:col-span-1 flex flex-col gap-6">
+            {thisWeekTasks.length > 0 && (
+              <Timetable 
+                title="Bills & Reminders: This Week" 
+                tasks={thisWeekTasks} 
+                onToggleComplete={onToggleComplete}
+                onDeleteTask={onDeleteTask}
+                accentColor="border-rose-500/50"
+              />
+            )}
+            {nextWeekTasks.length > 0 && (
+              <Timetable 
+                title="Bills & Reminders: Next Week" 
+                tasks={nextWeekTasks} 
+                onToggleComplete={onToggleComplete}
+                onDeleteTask={onDeleteTask}
+                accentColor="border-orange-500/50"
+              />
+            )}
+            {thisMonthTasks.length > 0 && (
+              <Timetable 
+                title="Bills & Reminders: This Month" 
+                tasks={thisMonthTasks} 
+                onToggleComplete={onToggleComplete}
+                onDeleteTask={onDeleteTask}
+                accentColor="border-indigo-500/50"
+              />
+            )}
+          </div>
+        )}
 
       </div>
     </div>

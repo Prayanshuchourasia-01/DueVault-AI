@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BellRing } from 'lucide-react';
+import { BellRing, Eye, X } from 'lucide-react';
 import Navigation from './components/Navigation';
 import FocusTab from './components/views/FocusTab';
 import DashboardTab from './components/views/DashboardTab';
@@ -41,6 +41,22 @@ function App() {
   } = useSchedule();
 
   const [reminders, setReminders] = useState([]);
+  const [dismissedReminderIds, setDismissedReminderIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('duevault_dismissed_reminders');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const dismissReminder = (id) => {
+    setDismissedReminderIds(prev => {
+      const updated = [...prev, id];
+      localStorage.setItem('duevault_dismissed_reminders', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Calculate System Reminders
   useEffect(() => {
@@ -51,6 +67,7 @@ function App() {
 
     tasks.forEach(task => {
       if (task.completed || !task.reminderDays || task.reminderDays.length === 0) return;
+      if (dismissedReminderIds.includes(task.id)) return;
 
       const taskDate = new Date(task.date);
       taskDate.setHours(0, 0, 0, 0);
@@ -64,7 +81,7 @@ function App() {
     });
 
     setReminders(activeReminders);
-  }, [tasks]);
+  }, [tasks, dismissedReminderIds]);
 
   const { isAlarmPlaying, alarmContext, startAlarm, stopAlarm } = useAudioAlarm();
 
@@ -170,19 +187,36 @@ function App() {
 
           {/* System Reminders Banner */}
           {reminders.length > 0 && (
-            <div className="mb-6 space-y-2">
+            <div className="mb-6 space-y-2 print:hidden">
               {reminders.map(rem => (
-                <div key={rem.id} className="bg-indigo-900/40 border border-indigo-500/50 rounded-xl p-4 flex items-center justify-between shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+                <div key={rem.id} className="bg-indigo-900/40 border border-indigo-500/50 rounded-xl p-4 flex items-center justify-between gap-4 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400 flex-shrink-0">
                       <BellRing className="w-5 h-5 animate-pulse" />
                     </div>
-                    <div>
-                      <h4 className="font-bold text-slate-200">System Reminder: {rem.title}</h4>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-slate-200 truncate">Upcoming Task Reminder: {rem.title}</h4>
                       <p className="text-xs text-slate-400">
                         {rem.daysLeft === 0 ? "Due today!" : `Starts in ${rem.daysLeft} day${rem.daysLeft > 1 ? 's' : ''} on ${rem.date}.`}
                       </p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button 
+                      onClick={() => setEditingTask(rem)}
+                      className="flex items-center gap-1 text-xs font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 px-3 py-1.5 rounded-lg border border-cyan-500/20 transition-all cursor-pointer"
+                      title="View / Edit Task"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View</span>
+                    </button>
+                    <button 
+                      onClick={() => dismissReminder(rem.id)}
+                      className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
+                      title="Dismiss Reminder"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -212,6 +246,7 @@ function App() {
               routineTasks={routines}
               timetableConfig={timetableConfig}
               setTimetableConfig={setTimetableConfig}
+              addRoutine={addRoutine}
               addRoutineException={addRoutineException}
               updateRoutineAll={updateRoutineAll}
               deleteRoutine={deleteRoutine}
