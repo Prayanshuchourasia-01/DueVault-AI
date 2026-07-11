@@ -12,7 +12,8 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave }) => {
     category: '',
     reminders: [],
     isBill: false,
-    amount: ''
+    amount: '',
+    excludeFromSafeToSpend: false
   });
 
   useEffect(() => {
@@ -30,7 +31,8 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave }) => {
         category: task.category || 'study',
         reminders: task.reminders || [],
         isBill: isBill,
-        amount: task.amount || ''
+        amount: task.amount || '',
+        excludeFromSafeToSpend: task.excludeFromSafeToSpend || false
       });
 
       const isDefaultCategory = ['study', 'coding', 'class', 'lab', 'hackathon', 'homework', 'exam', 'chores', 'other', 'bills', 'finance'].includes(task.category);
@@ -50,7 +52,8 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave }) => {
       priority: formData.priority,
       category: formData.isBill ? 'bills' : formData.category,
       reminders: formData.reminders,
-      amount: formData.isBill && formData.amount ? parseFloat(formData.amount) : undefined
+      amount: formData.isBill && formData.amount ? parseFloat(formData.amount) : undefined,
+      excludeFromSafeToSpend: formData.isBill ? formData.excludeFromSafeToSpend : false
     };
     
     onSave(task.id, updatedData);
@@ -220,6 +223,21 @@ const TaskEditModal = ({ task, isOpen, onClose, onSave }) => {
               />
             </div>
           </div>
+
+          {formData.isBill && (
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-800/40">
+              <input 
+                type="checkbox" 
+                id="deductFromSafeToSpend" 
+                checked={!formData.excludeFromSafeToSpend} 
+                onChange={e => setFormData({...formData, excludeFromSafeToSpend: !e.target.checked})} 
+                className="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0 w-4 h-4 cursor-pointer" 
+              />
+              <label htmlFor="deductFromSafeToSpend" className="text-xs text-slate-300 cursor-pointer select-none font-medium">
+                Deduct from Safe-To-Spend calculations
+              </label>
+            </div>
+          )}
 
           <div className="space-y-3 pt-2 border-t border-slate-800">
             <div className="flex items-center justify-between">

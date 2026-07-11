@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Wallet, TrendingDown, TrendingUp, DollarSign, Plus, Trash2, Scissors, CalendarDays, Activity, PieChart, ShieldCheck, Eye, EyeOff, BarChart3, X, CheckSquare, Square, AlertTriangle, CalendarRange, Pencil } from 'lucide-react';
 import { useFinances } from '../../hooks/useFinances';
 
-const FinanceTab = ({ tasks, sendNotification }) => {
+const FinanceTab = ({ tasks, sendNotification, onUpdateTask }) => {
   const { 
     finances, 
     addTransaction, 
@@ -42,6 +42,15 @@ const FinanceTab = ({ tasks, sendNotification }) => {
 
   const [splitTx, setSplitTx] = useState(null);
   const [editingTx, setEditingTx] = useState(null);
+
+  const [deductBillsFromSafeToSpend, setDeductBillsFromSafeToSpend] = useState(() => {
+    return localStorage.getItem('duevault_deduct_bills') !== 'false';
+  });
+
+  const handleToggleDeductBills = (val) => {
+    setDeductBillsFromSafeToSpend(val);
+    localStorage.setItem('duevault_deduct_bills', String(val));
+  };
   const [splitParts, setSplitParts] = useState({
     part1: { title: '', amount: '', category: '', sourceWallet: '' },
     part2: { title: '', amount: '', category: '', sourceWallet: '' }
@@ -145,6 +154,7 @@ const FinanceTab = ({ tasks, sendNotification }) => {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const upcomingBillsCost = upcomingBills.reduce((sum, bill) => {
+    if (bill.excludeFromSafeToSpend) return sum;
     if (bill.amount !== undefined) return sum + (parseFloat(bill.amount) || 0);
     const match = bill.title.match(/(?:₹|Rs\.?|\$)\s*(\d+(\.\d+)?)/i);
     const extracted = match ? parseFloat(match[1]) : 0;
@@ -168,7 +178,9 @@ const FinanceTab = ({ tasks, sendNotification }) => {
       }
     }, 0);
 
-  const safeToSpend = totalSpendableCapacity - upcomingBillsCost;
+  const safeToSpend = deductBillsFromSafeToSpend 
+    ? (totalSpendableCapacity - upcomingBillsCost) 
+    : totalSpendableCapacity;
 
   // Budget progress calculations based on selected tab type
   const budgetLimit = (activePeriod === 'CURRENT_MONTH' || activePeriod === 'PREV_MONTH') 
@@ -565,14 +577,35 @@ const FinanceTab = ({ tasks, sendNotification }) => {
           <p className="text-xs text-slate-500 mt-2">Available across all active non-savings accounts.</p>
         </div>
 
-        <div className="bg-slate-900 border border-emerald-900/50 rounded-2xl p-6 relative overflow-hidden">
+        <div className="bg-slate-900 border border-emerald-900/50 rounded-2xl p-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-10">
-            <ShieldCheck className="w-24 h-24 text-emerald-400" />
+            <ShieldCheck className="w-24 h-24 text-emerald-400 opacity-60 group-hover:scale-110 transition-transform" />
           </div>
-          <h3 className="text-emerald-400 font-bold text-sm uppercase tracking-wider mb-2">Safe-To-Spend</h3>
-          <p className="text-4xl font-extrabold text-white">₹{safeToSpend.toFixed(2)}</p>
-          <p className="text-xs text-slate-500 mt-2">
-            Spendable capacity (₹{totalSpendableCapacity.toFixed(2)}) minus ₹{upcomingBillsCost.toFixed(2)} in bills. Limits cap wallet contribution.
+          <div className="flex justify-between items-start mb-2 relative z-10">
+            <h3 className="text-emerald-400 font-bold text-sm uppercase tracking-wider">Safe-To-Spend</h3>
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">After Bills?</span>
+              <div className="flex items-center gap-1 bg-slate-950/60 p-0.5 rounded border border-slate-800">
+                <button 
+                  onClick={() => handleToggleDeductBills(false)}
+                  className={`px-2 py-0.5 text-[9px] font-bold rounded cursor-pointer transition-all ${!deductBillsFromSafeToSpend ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >
+                  No
+                </button>
+                <button 
+                  onClick={() => handleToggleDeductBills(true)}
+                  className={`px-2 py-0.5 text-[9px] font-bold rounded cursor-pointer transition-all ${deductBillsFromSafeToSpend ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-4xl font-extrabold text-white mt-1 relative z-10">₹{safeToSpend.toFixed(2)}</p>
+          <p className="text-xs text-slate-500 mt-2 relative z-10">
+            {deductBillsFromSafeToSpend 
+              ? `Spendable capacity (₹${totalSpendableCapacity.toFixed(2)}) minus ₹${upcomingBillsCost.toFixed(2)} in bills.`
+              : `Spendable capacity (₹${totalSpendableCapacity.toFixed(2)}) without subtracting bills.`}
           </p>
         </div>
 
@@ -1026,11 +1059,22 @@ const FinanceTab = ({ tasks, sendNotification }) => {
                         <p className="font-bold text-white line-clamp-1">{bill.title}</p>
                         <span className="text-orange-400 font-mono font-bold bg-orange-500/10 px-2 py-0.5 rounded text-xs">{displayAmount}</span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between border-b border-slate-800/50 pb-2 mb-2">
                         <p className="text-xs text-slate-400 font-medium">{new Date(bill.date).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}</p>
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${daysUntil <= 3 ? 'bg-red-500/20 text-red-400' : daysUntil <= 7 ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-400'}`}>
                           {daysUntil === 0 ? 'TODAY' : daysUntil < 0 ? 'OVERDUE' : `${daysUntil}d left`}
                         </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <label className="flex items-center gap-2 text-slate-400 cursor-pointer select-none">
+                          <input 
+                            type="checkbox" 
+                            checked={!bill.excludeFromSafeToSpend} 
+                            onChange={() => onUpdateTask(bill.id, { excludeFromSafeToSpend: !bill.excludeFromSafeToSpend })}
+                            className="rounded bg-slate-950 border-slate-800 text-orange-500 w-3.5 h-3.5 cursor-pointer"
+                          />
+                          <span>Deduct from Safe-To-Spend</span>
+                        </label>
                       </div>
                     </div>
                   );

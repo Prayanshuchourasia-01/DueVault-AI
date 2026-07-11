@@ -44,6 +44,19 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
     })
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
+  const historyTasks = tasks
+    .filter(task => {
+      if (task.isRoutine || !!task.routineId) return false;
+      if (!task.completed) return false;
+
+      const matchesSearch = (task.title || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            (task.category || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesPriority = filterPriority === 'ALL' || task.priority === filterPriority;
+      
+      return matchesSearch && matchesPriority;
+    })
+    .sort((a, b) => new Date(b.date || b.start) - new Date(a.date || a.start));
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-6 font-sans">
       
@@ -122,11 +135,11 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
                       <tr key={task.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
                         <td className="p-4 w-16">
                           <button onClick={() => onToggleComplete(task.id)} className="text-slate-500 hover:text-emerald-400 transition-colors">
-                            <Circle className="w-6 h-6" />
+                            {task.completed ? <CheckCircle2 className="w-6 h-6 text-emerald-400" /> : <Circle className="w-6 h-6" />}
                           </button>
                         </td>
                         <td className="p-4 font-bold text-white max-w-xs">
-                          <span>{task.title}</span>
+                          <span className={task.completed ? "line-through text-slate-500 font-normal" : ""}>{task.title}</span>
                           {task.amount !== undefined && (
                             <span className="inline-block ml-1.5 bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[10px] px-1 py-0.5 rounded font-mono font-bold">
                               ₹{task.amount}
@@ -166,7 +179,8 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
           <>
             {nextWeekTasks.length > 0 && renderTable(nextWeekTasks, "Due This Week (Next 7-10 Days)", <CalendarDays className="w-4 h-4 text-cyan-400" />)}
             {upcomingTasks.length > 0 && renderTable(upcomingTasks, "Upcoming (Later)", <CalendarClock className="w-4 h-4 text-indigo-400" />)}
-            {nextWeekTasks.length === 0 && upcomingTasks.length === 0 && (
+            {historyTasks.length > 0 && renderTable(historyTasks, "Vault History (Completed Tasks)", <CheckCircle2 className="w-4 h-4 text-emerald-400" />)}
+            {nextWeekTasks.length === 0 && upcomingTasks.length === 0 && historyTasks.length === 0 && (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500 py-16">
                 <CalendarDays className="w-8 h-8 text-slate-700 mx-auto mb-2" />
                 <p className="font-extrabold text-sm uppercase tracking-wider">Life Vault Empty</p>

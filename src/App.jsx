@@ -274,7 +274,7 @@ function App() {
           )}
 
           {activeTab === 'finances' && (
-            <FinanceTab tasks={tasks} sendNotification={sendNotification} />
+            <FinanceTab tasks={tasks} sendNotification={sendNotification} onUpdateTask={updateTask} />
           )}
 
           {activeTab === 'settings' && (
