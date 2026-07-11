@@ -133,6 +133,53 @@ export const useFinances = () => {
     });
   };
 
+  const editTransaction = (id, updatedData) => {
+    setFinances(prev => {
+      const oldTx = (prev.transactions || []).find(e => e.id === id);
+      if (!oldTx) return prev;
+
+      const updatedWallets = { ...prev.wallets };
+
+      // 1. Revert the old transaction's wallet impact
+      if (updatedWallets[oldTx.sourceWallet]) {
+        if (oldTx.type === 'EXPENSE') {
+          updatedWallets[oldTx.sourceWallet].balance += oldTx.amount;
+        } else {
+          updatedWallets[oldTx.sourceWallet].balance -= oldTx.amount;
+        }
+      }
+
+      // Create the updated transaction object
+      const updatedTx = {
+        ...oldTx,
+        title: updatedData.title,
+        amount: Number(updatedData.amount),
+        date: updatedData.date,
+        sourceWallet: updatedData.sourceWallet,
+        category: updatedData.category || 'other',
+        type: updatedData.type || 'EXPENSE'
+      };
+
+      // 2. Apply the new transaction's wallet impact
+      if (updatedWallets[updatedTx.sourceWallet]) {
+        if (updatedTx.type === 'EXPENSE') {
+          updatedWallets[updatedTx.sourceWallet].balance -= updatedTx.amount;
+        } else {
+          updatedWallets[updatedTx.sourceWallet].balance += updatedTx.amount;
+        }
+      }
+
+      // 3. Update the transaction in the list
+      const updatedTransactions = (prev.transactions || []).map(tx => tx.id === id ? updatedTx : tx);
+
+      return {
+        ...prev,
+        wallets: updatedWallets,
+        transactions: updatedTransactions
+      };
+    });
+  };
+
   const updateWalletBalance = (walletId, newBalance) => {
     setFinances(prev => ({
       ...prev,
@@ -294,6 +341,7 @@ export const useFinances = () => {
     finances,
     addTransaction,
     deleteTransaction,
+    editTransaction,
     updateWalletBalance,
     toggleWalletVisibility,
     setWalletSpendLimit,

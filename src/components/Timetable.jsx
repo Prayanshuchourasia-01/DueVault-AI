@@ -21,7 +21,7 @@ export const Timetable = ({
   };
 
   return (
-    <div className={`bg-slate-900/50 p-4 rounded-xl border ${accentColor} shadow-lg flex flex-col h-full max-h-[500px]`}>
+    <div className={`bg-slate-900/50 p-4 rounded-xl border ${accentColor} shadow-lg flex flex-col h-fit max-h-[500px]`}>
       
       {/* Timetable Header */}
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">

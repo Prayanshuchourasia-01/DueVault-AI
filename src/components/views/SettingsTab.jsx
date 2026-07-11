@@ -105,7 +105,7 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* API Key Panel */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 h-fit">
           <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
             <Key className="w-5 h-5 text-cyan-400" />
             Gemini API Key
@@ -190,7 +190,7 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
         </div>
 
         {/* Data Portability Panel */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 h-fit">
           <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
             <UploadCloud className="w-5 h-5 text-indigo-400" />
             Data Backup & Restore

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Wallet, TrendingDown, TrendingUp, DollarSign, Plus, Trash2, Scissors, CalendarDays, Activity, PieChart, ShieldCheck, Eye, EyeOff, BarChart3, X, CheckSquare, Square, AlertTriangle, CalendarRange } from 'lucide-react';
+import { Wallet, TrendingDown, TrendingUp, DollarSign, Plus, Trash2, Scissors, CalendarDays, Activity, PieChart, ShieldCheck, Eye, EyeOff, BarChart3, X, CheckSquare, Square, AlertTriangle, CalendarRange, Pencil } from 'lucide-react';
 import { useFinances } from '../../hooks/useFinances';
 
 const FinanceTab = ({ tasks, sendNotification }) => {
@@ -7,6 +7,7 @@ const FinanceTab = ({ tasks, sendNotification }) => {
     finances, 
     addTransaction, 
     deleteTransaction, 
+    editTransaction,
     updateWalletBalance, 
     updateWalletStartingBalance,
     toggleWalletVisibility, 
@@ -40,6 +41,7 @@ const FinanceTab = ({ tasks, sendNotification }) => {
   const [newAccount, setNewAccount] = useState({ name: '', balance: '', startingBalance: '', isHidden: false, spendLimit: '', limitEnabled: false });
 
   const [splitTx, setSplitTx] = useState(null);
+  const [editingTx, setEditingTx] = useState(null);
   const [splitParts, setSplitParts] = useState({
     part1: { title: '', amount: '', category: '', sourceWallet: '' },
     part2: { title: '', amount: '', category: '', sourceWallet: '' }
@@ -316,6 +318,32 @@ const FinanceTab = ({ tasks, sendNotification }) => {
     addTransaction({ ...newTx, type: txType });
     setNewTx({ title: '', amount: '', date: new Date().toLocaleDateString('en-CA'), sourceWallet: Object.keys(finances.wallets)[0] || 'cash', category: 'food' });
     setShowAddModal(false);
+  };
+
+  const handleEditTransactionSubmit = (e) => {
+    e.preventDefault();
+    if (!editingTx || !editingTx.title || !editingTx.amount) return;
+
+    // Check spend limit violations
+    const wallet = finances.wallets[editingTx.sourceWallet];
+    if (wallet && wallet.limitEnabled && editingTx.type === 'EXPENSE') {
+      const currentWeeklySpent = getWalletWeeklySpent(editingTx.sourceWallet);
+      const oldTx = finances.transactions.find(t => t.id === editingTx.id);
+      const isOldExpenseInSameWalletThisWeek = oldTx && oldTx.sourceWallet === editingTx.sourceWallet && oldTx.type === 'EXPENSE' && isInCurrentWeek(oldTx.date);
+      const oldAmt = isOldExpenseInSameWalletThisWeek ? oldTx.amount : 0;
+      
+      const newAmt = Number(editingTx.amount);
+      const adjustedSpent = currentWeeklySpent - oldAmt + newAmt;
+      
+      if (adjustedSpent > wallet.spendLimit) {
+        if (sendNotification) {
+          sendNotification("Spend Limit Exceeded!", `Warning: ${wallet.name} weekly spend limit of ₹${wallet.spendLimit} has been breached!`);
+        }
+      }
+    }
+
+    editTransaction(editingTx.id, editingTx);
+    setEditingTx(null);
   };
 
   const handleAddAccount = (e) => {
@@ -1074,6 +1102,9 @@ const FinanceTab = ({ tasks, sendNotification }) => {
                         </td>
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setEditingTx(tx)} className="text-slate-500 hover:text-cyan-400 transition-colors" title="Edit Transaction">
+                              <Pencil className="w-4 h-4" />
+                            </button>
                             <button onClick={() => handleStartSplit(tx)} className="text-slate-500 hover:text-indigo-400 transition-colors" title="Split Transaction">
                               <Scissors className="w-4 h-4" />
                             </button>
@@ -1142,6 +1173,117 @@ const FinanceTab = ({ tasks, sendNotification }) => {
               <div className="pt-6 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-5 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800 transition-colors">Cancel</button>
                 <button type="submit" className={`px-5 py-2.5 rounded-xl font-bold text-white transition-all ${txType === 'INCOME' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'}`}>Save Transaction</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Transaction Modal */}
+      {editingTx && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setEditingTx(null)} />
+          <div className="relative bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                Edit Transaction
+              </h3>
+              <button onClick={() => setEditingTx(null)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleEditTransactionSubmit} className="p-6 space-y-5">
+              
+              <div className="flex bg-slate-800 p-1 rounded-xl">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingTx({...editingTx, type: 'EXPENSE'})} 
+                  className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${editingTx.type === 'EXPENSE' ? 'bg-red-500/20 text-red-400' : 'text-slate-400 hover:text-white'}`}
+                >
+                  Expense
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setEditingTx({...editingTx, type: 'INCOME'})} 
+                  className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${editingTx.type === 'INCOME' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-white'}`}
+                >
+                  Income
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Description</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editingTx.title} 
+                  onChange={e => setEditingTx({...editingTx, title: e.target.value})} 
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500" 
+                  placeholder="E.g. Groceries, Salary..." 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Amount (₹)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    required 
+                    value={editingTx.amount} 
+                    onChange={e => setEditingTx({...editingTx, amount: e.target.value})} 
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-cyan-500" 
+                    placeholder="0.00" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Date</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={editingTx.date} 
+                    onChange={e => setEditingTx({...editingTx, date: e.target.value})} 
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Account</label>
+                  <select 
+                    value={editingTx.sourceWallet} 
+                    onChange={e => setEditingTx({...editingTx, sourceWallet: e.target.value})} 
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
+                  >
+                    {Object.values(finances.wallets).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Category</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editingTx.category} 
+                    onChange={e => setEditingTx({...editingTx, category: e.target.value.toLowerCase()})} 
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 uppercase text-xs font-mono" 
+                    placeholder="FOOD, BILLS..." 
+                  />
+                </div>
+              </div>
+
+              <div className="pt-6 flex justify-end gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingTx(null)} 
+                  className="px-5 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className={`px-5 py-2.5 rounded-xl font-bold text-white transition-all ${editingTx.type === 'INCOME' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'}`}
+                >
+                  Update Transaction
+                </button>
               </div>
             </form>
           </div>
