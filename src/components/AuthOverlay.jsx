@@ -130,8 +130,12 @@ const AuthOverlay = ({ onAuthSuccess }) => {
           status: 'PENDING' // New registrations start as pending admin approval
         });
 
-        // Run data migration from localStorage
-        await handleMigration(user.uid);
+        // Clear local storage for registration so new accounts start completely fresh
+        localStorage.removeItem('duevault_tasks');
+        localStorage.removeItem('duevault_routines');
+        localStorage.removeItem('duevault_finances');
+        localStorage.removeItem('duevault_timetable_config');
+
         if (onAuthSuccess) onAuthSuccess(user);
 
       } else {

@@ -203,7 +203,7 @@ Instructions:
     }
   };
 
-  const parseHTMLSchedule = async (htmlText) => {
+  const parseHTMLSchedule = async (htmlText, customInstructions = '') => {
     const apiKey = getApiKey();
     setIsParsing(true);
     setParseError(null);
@@ -223,8 +223,12 @@ Instructions:
     try {
       checkRateLimit();
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const userPrompt = customInstructions 
+        ? `Extract weekly recurring schedule from HTML: ${htmlText.substring(0, 50000)}\n\nUser custom guidance: "${customInstructions}"`
+        : `Extract weekly recurring schedule from HTML: ${htmlText.substring(0, 50000)}`;
+
       const payload = {
-        contents: [{ role: 'user', parts: [{ text: `Extract weekly recurring schedule from HTML: ${htmlText.substring(0, 50000)}` }] }],
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         systemInstruction: { parts: [{ text: timeContext }] },
         generationConfig: {
           responseMimeType: 'application/json',

@@ -228,6 +228,42 @@ const AdminTab = () => {
     }
   };
 
+  // Timetable HTML Template states & handlers
+  const [templateHtml, setTemplateHtml] = useState('');
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [templateMsg, setTemplateMsg] = useState('');
+
+  useEffect(() => {
+    const fetchTemplate = async () => {
+      try {
+        const docRef = doc(db, 'config', 'demo_html');
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          setTemplateHtml(snap.data().htmlContent || '');
+        }
+      } catch (err) {
+        console.error("Error fetching HTML template:", err);
+      }
+    };
+    fetchTemplate();
+  }, []);
+
+  const handleSaveTemplate = async () => {
+    setIsSavingTemplate(true);
+    setTemplateMsg('');
+    try {
+      const docRef = doc(db, 'config', 'demo_html');
+      await setDoc(docRef, { htmlContent: templateHtml }, { merge: true });
+      setTemplateMsg("Demo Timetable HTML template updated successfully!");
+      setTimeout(() => setTemplateMsg(''), 4000);
+    } catch (err) {
+      console.error("Error saving HTML template:", err);
+      alert("Failed to save template: " + err.message);
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
   // Filtered Users
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -484,6 +520,36 @@ const AdminTab = () => {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {!selectedUser && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 animate-slide-up">
+              <div className="border-b border-slate-800 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h3 className="font-bold text-white text-sm uppercase tracking-wider flex items-center gap-2">
+                    Configure Demo Timetable HTML
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Define the reference template downloaded by users in the Settings tab.</p>
+                </div>
+                <button
+                  onClick={handleSaveTemplate}
+                  disabled={isSavingTemplate}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-[0_0_15px_rgba(79,70,229,0.2)] disabled:opacity-50 shrink-0"
+                >
+                  {isSavingTemplate ? "Saving..." : "Save Template"}
+                </button>
+              </div>
+              {templateMsg && (
+                <p className="text-xs text-emerald-400 font-bold animate-pulse">{templateMsg}</p>
+              )}
+              <textarea
+                value={templateHtml}
+                onChange={(e) => setTemplateHtml(e.target.value)}
+                placeholder="Paste weekly HTML schedule markup template here..."
+                rows="12"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-300 focus:outline-none focus:border-indigo-500 leading-relaxed"
+              />
             </div>
           )}
 

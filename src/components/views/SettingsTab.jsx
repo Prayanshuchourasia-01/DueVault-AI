@@ -3,7 +3,8 @@ import { Settings2, Key, Bell, Volume2, Save, ShieldAlert, Code, UploadCloud, Do
 import { useAudioAlarm } from '../../hooks/useAudioAlarm';
 import { useNotifications } from '../../hooks/useNotifications';
 import HTMLImporter from '../HTMLImporter';
-import { auth } from '../../utils/firebase';
+import { auth, db } from '../../utils/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
   const [apiKey, setApiKey] = useState('');
@@ -33,15 +34,26 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
     setRingtone(savedRingtone);
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const user = auth.currentUser;
     const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
-    if (apiKey.trim()) {
-      localStorage.setItem(keyName, btoa(apiKey.trim()));
+    const encodedKey = apiKey.trim() ? btoa(apiKey.trim()) : '';
+    if (encodedKey) {
+      localStorage.setItem(keyName, encodedKey);
     } else {
       localStorage.removeItem(keyName);
     }
     localStorage.setItem('duevault_ringtone', ringtone);
+
+    if (user) {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, { geminiApiKey: encodedKey }, { merge: true });
+      } catch (err) {
+        console.error("Error saving API key to Firestore:", err);
+      }
+    }
+
     setSavedMessage('Settings saved successfully!');
     setTimeout(() => setSavedMessage(''), 3000);
   };
@@ -99,64 +111,80 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
     { id: 'modern-chime', label: 'Modern Chime', desc: 'Gentle cascading sine wave melody.' },
     { id: 'soft-pulse', label: 'Soft Pulse', desc: 'Slow, pulsing low-pass triangle wave.' },
     { id: 'urgent-alarm', label: 'Urgent Alarm', desc: 'Fast-paced, high-attention double beep.' },
-    { id: 'custom', label: 'Custom Audio', desc: 'Your uploaded ringtone.' }
+    { id: 'custom', label: 'Custom Audio', desc: 'Your uploaded ringtone file.' }
   ];
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-6">
+    <div className="w-full max-w-5xl mx-auto space-y-4 animate-fade-in pb-20 md:pb-4">
       
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-        <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-          <Settings2 className="w-6 h-6 text-indigo-400" />
-          System Configuration
-        </h2>
-        <p className="text-slate-400">Manage your local API keys and personalize the Focus HUD experience.</p>
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold text-white mb-0.5 flex items-center gap-2">
+            <Settings2 className="w-5.5 h-5.5 text-indigo-400" />
+            System Configuration
+          </h2>
+          <p className="text-slate-400 text-xs">Manage local API keys, personalize Focus HUD ringtones, and import routines.</p>
+        </div>
+        
+        {/* Compact Save Button on header */}
+        <button 
+          onClick={handleSave}
+          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:shadow-[0_0_20px_rgba(79,70,229,0.5)] cursor-pointer"
+        >
+          <Save className="w-4 h-4" />
+          Save Settings
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {savedMessage && (
+        <div className="bg-emerald-950/40 border border-emerald-900/20 text-emerald-400 p-2.5 rounded-xl text-xs font-bold animate-pulse text-center">
+          {savedMessage}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
         {/* Left Column Wrapper */}
-        <div className="space-y-6 flex flex-col h-fit">
+        <div className="space-y-4 flex flex-col h-fit">
           {/* API Key Panel */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 h-fit">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
-              <Key className="w-5 h-5 text-cyan-400" />
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3.5 h-fit">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+              <Key className="w-4.5 h-4.5 text-cyan-400" />
               Gemini API Key
             </h3>
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex gap-3 text-amber-200 text-sm">
-              <ShieldAlert className="w-5 h-5 shrink-0" />
-              <p><strong>Privacy Guarantee:</strong> Your API key is stored strictly in your browser's <code>localStorage</code>. It is never sent to any external server other than Google's Gemini endpoint.</p>
+            <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-3 flex gap-2.5 text-amber-200 text-[11px] leading-relaxed">
+              <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+              <p>Your API key is stored locally in your browser and synced securely to your private Firestore profile document for cross-device access.</p>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300">API Key</label>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-400">Google API Key</label>
               <input 
                 type="password" 
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="AIzaSy..."
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-slate-850 border border-slate-750 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 transition-colors font-mono"
               />
             </div>
           </div>
 
           {/* Data Portability Panel */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 h-fit">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
-              <UploadCloud className="w-5 h-5 text-indigo-400" />
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3.5 h-fit">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+              <UploadCloud className="w-4.5 h-4.5 text-indigo-400" />
               Data Backup & Restore
             </h3>
-            <p className="text-sm text-slate-400">
-              DueVault is a privacy-first application. All data is stored in your browser's Local Storage. 
-              If you clear your browser cache, you will lose everything. Please backup your Vault regularly.
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Keep regular backups of your offline local storage data. If you clear your browser cache, offline records may be lost.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
               <button 
                 onClick={handleExportData}
-                className="flex-1 flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-all border border-slate-700"
+                className="flex-1 flex justify-center items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl transition-all border border-slate-700 text-xs cursor-pointer"
               >
-                <DownloadCloud className="w-5 h-5" /> Export Data (JSON)
+                <DownloadCloud className="w-4 h-4" /> Export Data (JSON)
               </button>
               <div className="flex-1 relative">
                 <input 
@@ -165,42 +193,43 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
                   onChange={handleImportData}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <div className="w-full flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-all border border-slate-700 pointer-events-none">
-                  <UploadCloud className="w-5 h-5" /> Import Backup
+                <div className="w-full flex justify-center items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl transition-all border border-slate-700 pointer-events-none text-xs">
+                  <UploadCloud className="w-4 h-4" /> Import Backup
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-amber-500/80 bg-amber-500/10 p-2 rounded">
-              <AlertTriangle className="w-4 h-4" />
-              Warning: Importing a backup will completely overwrite your current Vault and Finances.
+            <div className="flex items-center gap-2 text-[10px] text-amber-500/80 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <span>Importing a backup will completely overwrite your current schedules and ledger.</span>
             </div>
           </div>
         </div>
 
         {/* Right Column Wrapper */}
-        <div className="space-y-6 flex flex-col h-fit">
+        <div className="space-y-4 flex flex-col h-fit">
           {/* Audio Panel */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
-              <Bell className="w-5 h-5 text-indigo-400" />
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3.5">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+              <Bell className="w-4.5 h-4.5 text-indigo-400" />
               Notifications & Audio
             </h3>
             
-            <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700 flex items-center justify-between">
+            <div className="bg-slate-850/40 rounded-xl p-3 border border-slate-800 flex items-center justify-between text-xs">
               <div>
-                <p className="font-semibold text-white text-sm">Browser Push Notifications</p>
-                <p className="text-xs text-slate-400 mt-0.5">Status: <span className={permission === 'granted' ? 'text-emerald-400' : 'text-amber-400'}>{permission.toUpperCase()}</span></p>
+                <p className="font-semibold text-slate-300">Browser Push Notifications</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">Status: <span className={permission === 'granted' ? 'text-emerald-400' : 'text-amber-400'}>{permission.toUpperCase()}</span></p>
               </div>
               {permission !== 'granted' && (
-                <button onClick={askPermission} className="px-4 py-2 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-colors rounded-lg text-xs font-bold uppercase tracking-wider">
+                <button onClick={askPermission} className="px-3 py-1 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-colors rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer">
                   Enable
                 </button>
               )}
             </div>
 
-            <div className="space-y-4 pt-2">
+            {/* Ringtones 2x2 Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               {ringtones.map(tone => (
-                <label key={tone.id} className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${ringtone === tone.id ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'}`}>
+                <label key={tone.id} className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${ringtone === tone.id ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-slate-850/60 border-slate-800 hover:border-slate-700'}`}>
                   <input 
                     type="radio" 
                     name="ringtone" 
@@ -209,36 +238,36 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
                     onChange={() => setRingtone(tone.id)}
                     className="mt-1 sr-only"
                   />
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${ringtone === tone.id ? 'border-indigo-400' : 'border-slate-500'}`}>
-                    {ringtone === tone.id && <div className="w-2.5 h-2.5 bg-indigo-400 rounded-full" />}
+                  <div className={`w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${ringtone === tone.id ? 'border-indigo-400' : 'border-slate-650'}`}>
+                    {ringtone === tone.id && <div className="w-2 h-2 bg-indigo-400 rounded-full" />}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-white">{tone.label}</p>
-                    <p className="text-xs text-slate-400 mt-1">{tone.desc}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-slate-200 text-xs truncate leading-snug">{tone.label}</p>
+                    <p className="text-[9px] text-slate-500 mt-0.5 line-clamp-2 leading-tight">{tone.desc}</p>
                   </div>
                   <button 
                     onClick={(e) => { e.preventDefault(); testAlarm(tone.id); }}
-                    className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition-colors"
+                    className="p-1.5 text-slate-500 hover:text-cyan-400 hover:bg-slate-850 rounded transition-colors shrink-0"
                     title="Test Sound"
                   >
-                    <Volume2 className="w-5 h-5" />
+                    <Volume2 className="w-3.5 h-3.5" />
                   </button>
                 </label>
               ))}
-              
-              <div className="pt-2 border-t border-slate-800">
-                <label className="flex items-center justify-between p-4 rounded-xl border border-dashed border-slate-700 bg-slate-800/30 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-colors">
-                  <div>
-                    <p className="font-semibold text-white text-sm">Upload Custom Audio</p>
-                    <p className="text-xs text-slate-400 mt-1">Select an MP3, WAV, or OGG file.</p>
-                  </div>
-                  <div className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
-                    <UploadCloud className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-300">Browse...</span>
-                  </div>
-                  <input type="file" accept="audio/*" className="hidden" onChange={handleCustomRingtoneUpload} />
-                </label>
-              </div>
+            </div>
+            
+            <div className="pt-2 border-t border-slate-850">
+              <label className="flex items-center justify-between p-3 rounded-xl border border-dashed border-slate-750 bg-slate-850/20 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-colors">
+                <div>
+                  <p className="font-semibold text-slate-350 text-xs">Upload Custom Audio</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Choose an MP3, WAV, or OGG file.</p>
+                </div>
+                <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700 shrink-0">
+                  <UploadCloud className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-[10px] font-bold text-slate-300">Browse...</span>
+                </div>
+                <input type="file" accept="audio/*" className="hidden" onChange={handleCustomRingtoneUpload} />
+              </label>
             </div>
           </div>
 
@@ -246,20 +275,6 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
           <HTMLImporter onTasksExtracted={onTasksExtracted} clearRoutines={clearRoutines} />
         </div>
 
-      </div>
-
-      {/* Action Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex items-center justify-between">
-        {savedMessage ? (
-          <p className="text-emerald-400 text-sm font-medium animate-pulse">{savedMessage}</p>
-        ) : <div />}
-        <button 
-          onClick={handleSave}
-          className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)]"
-        >
-          <Save className="w-5 h-5" />
-          Save Settings
-        </button>
       </div>
 
     </div>

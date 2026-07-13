@@ -44,6 +44,9 @@ function App() {
             const data = snap.data();
             setUserProfile(data);
             setIsAdmin(data.isAdmin || false);
+            if (data.geminiApiKey) {
+              localStorage.setItem(`duevault_gemini_key_${user.uid}`, data.geminiApiKey);
+            }
           } else {
             setUserProfile(null);
             setIsAdmin(false);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Key, Eye, EyeOff, ShieldAlert, Lock, Check } from 'lucide-react';
-import { auth } from '../utils/firebase';
+import { auth, db } from '../utils/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 export const SettingsModal = ({ isOpen, onClose }) => {
   const [apiKey, setApiKey] = useState('');
@@ -25,15 +26,26 @@ export const SettingsModal = ({ isOpen, onClose }) => {
     setApiKey(decodedKey);
   }, [isOpen]);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     const user = auth.currentUser;
     const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
-    if (apiKey.trim()) {
-      localStorage.setItem(keyName, btoa(apiKey.trim()));
+    const encodedKey = apiKey.trim() ? btoa(apiKey.trim()) : '';
+    if (encodedKey) {
+      localStorage.setItem(keyName, encodedKey);
     } else {
       localStorage.removeItem(keyName);
     }
+
+    if (user) {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, { geminiApiKey: encodedKey }, { merge: true });
+      } catch (err) {
+        console.error("Error saving API key to Firestore:", err);
+      }
+    }
+
     setSavedStatus(true);
     setTimeout(() => {
       setSavedStatus(false);
@@ -41,13 +53,19 @@ export const SettingsModal = ({ isOpen, onClose }) => {
     }, 1200);
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (confirm('Clear API Key from local storage? Connection to Gemini NLP will be deactivated.')) {
       const user = auth.currentUser;
       const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
       localStorage.removeItem(keyName);
       if (user) {
         localStorage.removeItem('duevault_gemini_key');
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await setDoc(userRef, { geminiApiKey: '' }, { merge: true });
+        } catch (err) {
+          console.error("Error clearing API key in Firestore:", err);
+        }
       }
       setApiKey('');
       onClose();
