@@ -8,7 +8,8 @@ import {
   setDoc,
   query, 
   orderBy, 
-  limit 
+  limit,
+  writeBatch
 } from 'firebase/firestore';
 import { 
   ShieldAlert, 
@@ -40,6 +41,8 @@ const AdminTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [logsSearch, setLogsSearch] = useState('');
   const [statusMsg, setStatusMsg] = useState('');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', username: '', email: '', phone: '' });
 
   // 1. Fetch IP and verify against Firestore Admin IP whitelist
   useEffect(() => {
@@ -121,6 +124,13 @@ const AdminTab = () => {
   // 3. Fetch detailed user subcollections for backups/history
   const handleSelectUser = async (user) => {
     setSelectedUser(user);
+    setIsEditingProfile(false);
+    setEditForm({
+      name: user.name || '',
+      username: user.username || '',
+      email: user.email || '',
+      phone: user.phone || ''
+    });
     setLoadingData(true);
     try {
       // Fetch Tasks
@@ -261,6 +271,76 @@ const AdminTab = () => {
       alert("Failed to save template: " + err.message);
     } finally {
       setIsSavingTemplate(false);
+    }
+  };
+
+  const handleSaveProfileEdit = async () => {
+    if (!editForm.name.trim() || !editForm.username.trim() || !editForm.email.trim()) {
+      alert("Name, username, and email are required.");
+      return;
+    }
+    try {
+      const userRef = doc(db, 'users', selectedUser.uid);
+      await setDoc(userRef, {
+        name: editForm.name.trim(),
+        username: editForm.username.trim().toLowerCase(),
+        email: editForm.email.trim().toLowerCase(),
+        phone: editForm.phone.trim()
+      }, { merge: true });
+
+      // Update local state
+      setUsers(prev => prev.map(u => u.uid === selectedUser.uid ? { ...u, ...editForm } : u));
+      setSelectedUser(prev => prev ? { ...prev, ...editForm } : null);
+      setIsEditingProfile(false);
+
+      setStatusMsg("User profile updated successfully!");
+      setTimeout(() => setStatusMsg(''), 5000);
+    } catch (err) {
+      console.error("Error updating user profile:", err);
+      alert("Failed to update profile: " + err.message);
+    }
+  };
+
+  const handleDeleteUserData = async (userId, userName) => {
+    if (!confirm(`Are you absolutely sure you want to PERMANENTLY delete all data for ${userName}? This will wipe their tasks, routines, finances, logs, and account profile, and cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const batch = writeBatch(db);
+      
+      // 1. Delete tasks subcollection docs
+      const tasksSnap = await getDocs(collection(db, 'users', userId, 'tasks'));
+      tasksSnap.forEach(d => batch.delete(d.ref));
+      
+      // 2. Delete routines subcollection docs
+      const routinesSnap = await getDocs(collection(db, 'users', userId, 'routines'));
+      routinesSnap.forEach(d => batch.delete(d.ref));
+
+      // 3. Delete history logs docs
+      const logsSnap = await getDocs(collection(db, 'users', userId, 'history_logs'));
+      logsSnap.forEach(d => batch.delete(d.ref));
+      
+      // 4. Delete finances doc
+      batch.delete(doc(db, 'users', userId, 'finances', 'data'));
+      
+      // 5. Delete config doc
+      batch.delete(doc(db, 'users', userId, 'config', 'timetable'));
+      
+      // 6. Delete user profile doc itself
+      batch.delete(doc(db, 'users', userId));
+      
+      await batch.commit();
+      
+      // Update local state to remove the deleted user
+      setUsers(prev => prev.filter(u => u.uid !== userId));
+      setSelectedUser(null);
+      
+      setStatusMsg(`All data for user ${userName} has been permanently purged.`);
+      setTimeout(() => setStatusMsg(''), 5000);
+    } catch (err) {
+      console.error("Error purging user data:", err);
+      alert("Failed to purge user data: " + err.message);
     }
   };
 
@@ -438,13 +518,109 @@ const AdminTab = () => {
                   </h3>
                   <p className="text-xs text-slate-400 font-mono mt-0.5">UID: {selectedUser.uid}</p>
                 </div>
-                <button 
-                  onClick={downloadUserBackup}
-                  className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)]"
-                >
-                  <DownloadCloud className="w-4 h-4" /> Download Backup folder
-                </button>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <button 
+                    onClick={downloadUserBackup}
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-white font-bold py-2 px-3 rounded-xl text-[10px] transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)] cursor-pointer animate-fade-in"
+                  >
+                    <DownloadCloud className="w-3.5 h-3.5" /> Backup JSON
+                  </button>
+                  {isEditingProfile ? (
+                    <>
+                      <button 
+                        onClick={handleSaveProfileEdit}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-xl text-[10px] transition-colors cursor-pointer"
+                      >
+                        Save
+                      </button>
+                      <button 
+                        onClick={() => setIsEditingProfile(false)}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-350 font-bold py-2 px-3 rounded-xl text-[10px] transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        setEditForm({
+                          name: selectedUser.name || '',
+                          username: selectedUser.username || '',
+                          email: selectedUser.email || '',
+                          phone: selectedUser.phone || ''
+                        });
+                        setIsEditingProfile(true);
+                      }}
+                      className="bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-750 font-bold py-2 px-3 rounded-xl text-[10px] transition-colors cursor-pointer"
+                    >
+                      Edit Profile
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Profile Metadata List / Edit Fields */}
+              {isEditingProfile ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs animate-fade-in">
+                  <div className="space-y-1">
+                    <label className="text-slate-400 font-sans font-semibold">Full Name</label>
+                    <input 
+                      type="text" 
+                      value={editForm.name} 
+                      onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-sans"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-slate-400 font-sans font-semibold">Username</label>
+                    <input 
+                      type="text" 
+                      value={editForm.username} 
+                      onChange={e => setEditForm({ ...editForm, username: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-sans"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-slate-400 font-sans font-semibold">Email Address</label>
+                    <input 
+                      type="email" 
+                      value={editForm.email} 
+                      onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-sans"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-slate-400 font-sans font-semibold">Phone Number</label>
+                    <input 
+                      type="text" 
+                      value={editForm.phone} 
+                      onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-sans"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono animate-fade-in">
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                    <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Profile Username</div>
+                    <div className="text-slate-200 font-semibold truncate">@{selectedUser.username}</div>
+                  </div>
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                    <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Registered Email</div>
+                    <div className="text-slate-200 font-semibold truncate">{selectedUser.email}</div>
+                  </div>
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                    <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Contact Number</div>
+                    <div className="text-slate-200 font-semibold">{selectedUser.phone || 'N/A'}</div>
+                  </div>
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                    <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Created Timestamp</div>
+                    <div className="text-slate-200 font-semibold truncate">
+                      {selectedUser.createdAt?.toDate ? selectedUser.createdAt.toDate().toLocaleString() : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Approval Action Card */}
               {selectedUser.status === 'PENDING' && !selectedUser.isAdmin && (
@@ -463,20 +639,20 @@ const AdminTab = () => {
               )}
 
               {/* Data Summary counts */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-cyan-400">{selectedUserData.tasks.length}</div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Tasks stored</div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-2.5 text-center">
+                  <div className="text-xl font-bold text-cyan-400">{selectedUserData.tasks.length}</div>
+                  <div className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Tasks</div>
                 </div>
-                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-indigo-400">{selectedUserData.routines.length}</div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Routines stored</div>
+                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-2.5 text-center">
+                  <div className="text-xl font-bold text-indigo-400">{selectedUserData.routines.length}</div>
+                  <div className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Routines</div>
                 </div>
-                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold text-emerald-400">
+                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-2.5 text-center">
+                  <div className="text-xl font-bold text-emerald-400">
                     {selectedUserData.finances?.transactions?.length || 0}
                   </div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Transactions</div>
+                  <div className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Trans.</div>
                 </div>
               </div>
 
@@ -518,6 +694,20 @@ const AdminTab = () => {
                     ))
                   )}
                 </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="border border-red-500/20 bg-red-500/5 rounded-xl p-4 space-y-3">
+                <div>
+                  <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider">Danger Zone</h4>
+                  <p className="text-[10px] text-slate-500 mt-0.5 leading-normal">Wipe all tasks, routines, budgets, logs, and profile records from Cloud Firestore. This cannot be undone.</p>
+                </div>
+                <button
+                  onClick={() => handleDeleteUserData(selectedUser.uid, selectedUser.name)}
+                  className="bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-[0_0_10px_rgba(239,68,68,0.1)] shrink-0"
+                >
+                  Purge All User Data
+                </button>
               </div>
 
             </div>
