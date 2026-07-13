@@ -22,9 +22,6 @@ export const InputEngine = ({ apiKey, onAddTask, onOpenSettings }) => {
     const user = auth.currentUser;
     const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
     let apiKey = localStorage.getItem(keyName);
-    if (!apiKey && user) {
-      apiKey = localStorage.getItem('duevault_gemini_key');
-    }
     if (!apiKey) {
       setLocalError("Gemini API Key is missing. Please go to the Settings tab on the left to add it.");
       return;

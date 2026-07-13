@@ -12,9 +12,6 @@ export const SettingsModal = ({ isOpen, onClose }) => {
     const user = auth.currentUser;
     const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
     let savedKeyBase64 = localStorage.getItem(keyName) || '';
-    if (!savedKeyBase64 && user) {
-      savedKeyBase64 = localStorage.getItem('duevault_gemini_key') || '';
-    }
     let decodedKey = '';
     if (savedKeyBase64) {
       try {

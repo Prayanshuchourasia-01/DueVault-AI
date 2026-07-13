@@ -113,9 +113,6 @@ const HTMLImporter = ({ onTasksExtracted, clearRoutines }) => {
     const user = auth.currentUser;
     const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
     let apiKey = localStorage.getItem(keyName);
-    if (!apiKey && user) {
-      apiKey = localStorage.getItem('duevault_gemini_key');
-    }
     if (!apiKey) {
       alert("Please save your Gemini API Key in the settings panel first.");
       return;

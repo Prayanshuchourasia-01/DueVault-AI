@@ -285,10 +285,32 @@ function App() {
             </p>
           </div>
 
-          <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 text-left text-xs font-mono text-slate-500 space-y-1">
-            <div><span className="text-slate-400">Username:</span> @{userProfile.username}</div>
-            <div><span className="text-slate-400">Email:</span> {userProfile.email}</div>
-            <div><span className="text-slate-400">Status:</span> <span className="text-rose-400 font-bold uppercase">Pending Approval</span></div>
+          <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 text-left text-xs font-mono text-slate-500 space-y-2">
+            <div><span className="text-slate-400 font-sans font-semibold">Username:</span> @{userProfile.username}</div>
+            <div><span className="text-slate-400 font-sans font-semibold">Email:</span> {userProfile.email}</div>
+            <div className="flex items-center justify-between gap-2 border-t border-slate-850 pt-2 mt-1">
+              <div>
+                <span className="text-slate-400 font-sans font-semibold">User ID:</span>
+                <span className="text-[10px] block text-cyan-400 select-all font-mono mt-0.5">{currentUser.uid}</span>
+              </div>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(currentUser.uid);
+                  alert("User ID copied to clipboard!");
+                }}
+                className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-sans font-bold text-[10px] px-2.5 py-1 rounded transition-colors cursor-pointer shrink-0"
+              >
+                Copy
+              </button>
+            </div>
+            <div><span className="text-slate-400 font-sans font-semibold">Status:</span> <span className="text-rose-400 font-bold uppercase">Pending Approval</span></div>
+          </div>
+
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 text-left text-2xs text-indigo-300 leading-normal">
+            <p className="font-semibold text-slate-200">🚀 Speed Up Approval:</p>
+            <p className="mt-1">
+              Contact the developer at <span className="font-bold text-cyan-400 font-mono select-all">praya.chourasia@gmail.com</span> with your User ID to request instant authorization.
+            </p>
           </div>
 
           <button
