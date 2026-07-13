@@ -126,7 +126,8 @@ const AuthOverlay = ({ onAuthSuccess }) => {
           email: email.trim().toLowerCase(),
           phone: phone.trim(),
           createdAt: serverTimestamp(),
-          isAdmin: false // Managed manually or initialized by first user
+          isAdmin: false, // Managed manually or initialized by first user
+          status: 'PENDING' // New registrations start as pending admin approval
         });
 
         // Run data migration from localStorage

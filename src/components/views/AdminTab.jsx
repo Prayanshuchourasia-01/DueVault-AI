@@ -210,6 +210,24 @@ const AdminTab = () => {
     }
   };
 
+  // 7. Approve User status
+  const handleApproveUser = async (userId) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await setDoc(userRef, { status: 'APPROVED' }, { merge: true });
+      
+      // Update local states so UI updates immediately
+      setUsers(prev => prev.map(u => u.uid === userId ? { ...u, status: 'APPROVED' } : u));
+      setSelectedUser(prev => prev && prev.uid === userId ? { ...prev, status: 'APPROVED' } : prev);
+      
+      setStatusMsg(`User has been approved! They can now log in and sync data.`);
+      setTimeout(() => setStatusMsg(''), 5000);
+    } catch (err) {
+      console.error("Error approving user:", err);
+      alert("Failed to approve user: " + err.message);
+    }
+  };
+
   // Filtered Users
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -342,7 +360,15 @@ const AdminTab = () => {
                         onClick={() => handleSelectUser(user)}
                       >
                         <td className="p-3 pl-4">
-                          <div className="font-semibold text-slate-200">{user.name}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-semibold text-slate-200">{user.name}</div>
+                            {user.status === 'PENDING' && !user.isAdmin && (
+                              <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Pending</span>
+                            )}
+                            {user.status === 'APPROVED' && (
+                              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Approved</span>
+                            )}
+                          </div>
                           <div className="text-xs text-slate-500 font-mono">@{user.username}</div>
                         </td>
                         <td className="p-3 font-mono text-xs">{user.email}</td>
@@ -368,7 +394,12 @@ const AdminTab = () => {
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-slide-up">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-white">Inspector: {selectedUser.name}</h3>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    Inspector: {selectedUser.name}
+                    {selectedUser.status === 'PENDING' && !selectedUser.isAdmin && (
+                      <span className="bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Pending Approval</span>
+                    )}
+                  </h3>
                   <p className="text-xs text-slate-400 font-mono mt-0.5">UID: {selectedUser.uid}</p>
                 </div>
                 <button 
@@ -378,6 +409,22 @@ const AdminTab = () => {
                   <DownloadCloud className="w-4 h-4" /> Download Backup folder
                 </button>
               </div>
+
+              {/* Approval Action Card */}
+              {selectedUser.status === 'PENDING' && !selectedUser.isAdmin && (
+                <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
+                  <div>
+                    <h4 className="text-sm font-bold text-rose-300">Account Authorization Required</h4>
+                    <p className="text-xs text-slate-400 mt-1">This user is currently blocked from accessing DueVault AI. Approve them below to grant entry.</p>
+                  </div>
+                  <button
+                    onClick={() => handleApproveUser(selectedUser.uid)}
+                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer shrink-0"
+                  >
+                    Approve Access
+                  </button>
+                </div>
+              )}
 
               {/* Data Summary counts */}
               <div className="grid grid-cols-3 gap-4">

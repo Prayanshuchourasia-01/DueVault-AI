@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BellRing, Eye, X } from 'lucide-react';
+import { BellRing, Eye, X, ShieldAlert } from 'lucide-react';
 import Navigation from './components/Navigation';
 import FocusTab from './components/views/FocusTab';
 import DashboardTab from './components/views/DashboardTab';
@@ -22,6 +22,7 @@ import { auth, db } from './utils/firebase';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('focus');
@@ -36,21 +37,26 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (user) {
-        // Subscribe to user profile document to check for isAdmin flag
+        // Subscribe to user profile document to check for isAdmin flag and status
         const profileRef = doc(db, 'users', user.uid);
         unsubProfile = onSnapshot(profileRef, (snap) => {
-          if (snap.exists() && snap.data().isAdmin) {
-            setIsAdmin(true);
+          if (snap.exists()) {
+            const data = snap.data();
+            setUserProfile(data);
+            setIsAdmin(data.isAdmin || false);
           } else {
+            setUserProfile(null);
             setIsAdmin(false);
           }
           setAuthLoading(false);
         }, (err) => {
           console.error("Error subscribing to profile:", err);
+          setUserProfile(null);
           setIsAdmin(false);
           setAuthLoading(false);
         });
       } else {
+        setUserProfile(null);
         setIsAdmin(false);
         setAuthLoading(false);
       }
@@ -65,6 +71,7 @@ function App() {
   const handleSignOut = () => {
     signOut(auth).then(() => {
       setCurrentUser(null);
+      setUserProfile(null);
       setIsAdmin(false);
       setActiveTab('focus');
     }).catch(err => console.error("Sign out error:", err));
@@ -247,6 +254,49 @@ function App() {
   // Auth Sign-In Render Gate
   if (!currentUser) {
     return <AuthOverlay onAuthSuccess={(user) => setCurrentUser(user)} />;
+  }
+
+  // Pending Approval Gate
+  const isPendingApproval = currentUser && userProfile && userProfile.status === 'PENDING' && !userProfile.isAdmin;
+
+  if (isPendingApproval) {
+    return (
+      <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-4 z-[999] overflow-y-auto">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-rose-500/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-3xl p-8 w-full max-w-md shadow-2xl relative text-center space-y-6 animate-fade-in">
+          <div className="mx-auto bg-rose-500/20 p-4 rounded-2xl w-fit shadow-[0_0_15px_rgba(244,63,94,0.2)]">
+            <ShieldAlert className="w-10 h-10 text-rose-400" />
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-rose-400 to-indigo-400 bg-clip-text text-transparent">
+              Authorization Pending
+            </h1>
+            <p className="text-sm text-slate-300">
+              Welcome, <span className="font-semibold text-slate-100">{userProfile.name}</span>!
+            </p>
+            <p className="text-xs text-slate-400 leading-relaxed pt-1">
+              Your security profile has been created, but your account is currently pending administrator approval. After the admin authorizes your entry, this screen will dismiss automatically.
+            </p>
+          </div>
+
+          <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 text-left text-xs font-mono text-slate-500 space-y-1">
+            <div><span className="text-slate-400">Username:</span> @{userProfile.username}</div>
+            <div><span className="text-slate-400">Email:</span> {userProfile.email}</div>
+            <div><span className="text-slate-400">Status:</span> <span className="text-rose-400 font-bold uppercase">Pending Approval</span></div>
+          </div>
+
+          <button
+            onClick={handleSignOut}
+            className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold py-3 rounded-xl transition-all cursor-pointer text-sm"
+          >
+            Sign Out & Switch Account
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
