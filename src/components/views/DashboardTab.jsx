@@ -35,7 +35,7 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toLocaleDateString('en-CA');
 
-  const [timeFilter, setTimeFilter] = useState('WEEK'); // 'TODAY', 'TOMORROW', 'WEEK'
+  const [timeFilter, setTimeFilter] = useState('TODAY'); // 'TODAY', 'TOMORROW', 'WEEK'
 
   const dragScrollProps = useDragScroll();
   const activeBlockRef = useRef(null);
@@ -53,14 +53,7 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
   const fullUpcomingWeek = useMemo(() => {
     let weekTasks = [];
     
-    // Add explicitly scheduled tasks for the next 7 days
-    tasks.forEach(t => {
-      const tDate = new Date(t.date || t.start);
-      const diff = (tDate - today) / (1000 * 60 * 60 * 24);
-      if (diff >= -1 && diff <= 7) weekTasks.push(t);
-    });
-
-    // Simulate routine spawns for the next 7 days
+    // Simulate routine spawns for the next 7 days (timetable page blocks only)
     for (let i = 0; i < 7; i++) {
       const targetDate = new Date(today);
       targetDate.setDate(targetDate.getDate() + i);
@@ -96,7 +89,7 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
     }
 
     return weekTasks.sort((a, b) => new Date(a.start || a.date) - new Date(b.start || b.date));
-  }, [tasks, routines]);
+  }, [routines]);
 
   // Filter based on UI toggle
   const upcomingWeek = useMemo(() => {

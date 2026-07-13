@@ -242,15 +242,8 @@ export const useSchedule = () => {
     
     setTodaysRoutines(todaysRoutines);
 
-    const academicCategories = [
-      'study', 'coding', 'class', 'lab', 'hackathon', 'homework', 'exam', 
-      'dsa', 'lecture', 'academic', 'timetable', 'revision', 'project', 
-      'research', 'learning', 'course', 'test', 'quiz'
-    ];
-    
-    const allActiveCandidates = [...tasks.filter(t => t.date === todayDateStr), ...todaysRoutines].filter(t => 
-      t.isRoutine || academicCategories.includes((t.category || '').toLowerCase())
-    );
+    // Active Focus HUD candidates are strictly timetable routines (no Vault tasks)
+    const allActiveCandidates = [...todaysRoutines];
 
     const sortedTasks = allActiveCandidates.sort((a, b) => new Date(a.start) - new Date(b.start));
     

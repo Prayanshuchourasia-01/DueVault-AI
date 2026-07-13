@@ -141,6 +141,14 @@ function App() {
   }, [tasks, dismissedReminderIds]);
 
   const { isAlarmPlaying, alarmContext, startAlarm, stopAlarm } = useAudioAlarm();
+  const [dismissedAlarmTaskId, setDismissedAlarmTaskId] = useState(null);
+
+  const handleDismissAlarm = () => {
+    if (activeTask) {
+      setDismissedAlarmTaskId(activeTask.id);
+    }
+    stopAlarm();
+  };
 
   // Handle Exact Time Reminders
   useEffect(() => {
@@ -167,6 +175,10 @@ function App() {
   // Handle High Priority Active Task Alarms
   useEffect(() => {
     if (activeTask && !activeTask.completed) {
+      if (activeTask.id === dismissedAlarmTaskId) {
+        stopAlarm();
+        return;
+      }
       if (activeTask.priority === 'HIGH' || activeTask.priority === 'CRITICAL') {
         const tone = localStorage.getItem('duevault_ringtone') || 'modern-chime';
         startAlarm(tone, {
@@ -177,7 +189,7 @@ function App() {
     } else {
       stopAlarm();
     }
-  }, [activeTask, startAlarm, stopAlarm]);
+  }, [activeTask, dismissedAlarmTaskId, startAlarm, stopAlarm]);
 
   // Robust Block Starting Notification Scheduler (exact minute matching)
   const notifiedTasksRef = React.useRef(new Set());
@@ -373,7 +385,7 @@ function App() {
           isVisible={isAlarmPlaying}
           title={alarmContext?.title}
           message={alarmContext?.message}
-          onDismiss={stopAlarm}
+          onDismiss={handleDismissAlarm}
         />
 
       </div>
