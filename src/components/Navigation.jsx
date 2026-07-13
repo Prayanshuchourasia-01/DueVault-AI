@@ -1,7 +1,28 @@
 import React from 'react';
-import { Home, CalendarDays, Vault, Settings, Orbit, Wallet, CalendarClock, Sun, Moon } from 'lucide-react';
+import { 
+  Home, 
+  CalendarDays, 
+  Vault, 
+  Settings, 
+  Orbit, 
+  Wallet, 
+  CalendarClock, 
+  Sun, 
+  Moon, 
+  ShieldCheck, 
+  LogOut, 
+  User 
+} from 'lucide-react';
 
-const Navigation = ({ activeTab, setActiveTab, theme, setTheme }) => {
+const Navigation = ({ 
+  activeTab, 
+  setActiveTab, 
+  theme, 
+  setTheme, 
+  currentUser, 
+  isAdmin, 
+  onSignOut 
+}) => {
   const navItems = [
     { id: 'focus', icon: Home, label: 'Focus HUD' },
     { id: 'dashboard', icon: CalendarDays, label: 'Dashboard' },
@@ -11,11 +32,16 @@ const Navigation = ({ activeTab, setActiveTab, theme, setTheme }) => {
     { id: 'settings', icon: Settings, label: 'Settings' }
   ];
 
+  // Dynamically insert Admin Portal tab if the user is authorized
+  if (isAdmin) {
+    navItems.push({ id: 'admin', icon: ShieldCheck, label: 'Admin Portal' });
+  }
+
   return (
     <nav className="w-full md:w-64 bg-slate-900 border-r border-slate-800 flex md:flex-col justify-between md:justify-start items-center md:items-start p-4 z-40 fixed bottom-0 md:static md:h-screen">
       
       {/* Brand / Logo (Hidden on small mobile) */}
-      <div className="hidden md:flex items-center gap-3 w-full p-2 mb-8 border-b border-slate-800 pb-6">
+      <div className="hidden md:flex items-center gap-3 w-full p-2 mb-6 border-b border-slate-800 pb-4">
         <div className="bg-cyan-500/20 p-2 rounded-xl">
           <Orbit className="w-6 h-6 text-cyan-400 animate-spin-slow" />
         </div>
@@ -26,6 +52,19 @@ const Navigation = ({ activeTab, setActiveTab, theme, setTheme }) => {
           <p className="text-xs text-slate-500 tracking-widest font-mono">PRO EDITION</p>
         </div>
       </div>
+
+      {/* User profile widget if logged in */}
+      {currentUser && (
+        <div className="hidden md:flex items-center gap-2.5 w-full p-2 mb-4 bg-slate-950/40 border border-slate-800/80 rounded-xl">
+          <div className="bg-indigo-500/10 p-1.5 rounded-lg text-indigo-400 border border-indigo-500/20">
+            <User className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-200 truncate">{currentUser.displayName || currentUser.email}</p>
+            <p className="text-[10px] text-slate-500 font-mono truncate">{isAdmin ? 'ADMIN ACCESS' : 'SYNC ENABLED'}</p>
+          </div>
+        </div>
+      )}
 
       {/* Nav Links */}
       <div className="flex md:flex-col w-full justify-around md:justify-start gap-2 flex-1">
@@ -49,8 +88,18 @@ const Navigation = ({ activeTab, setActiveTab, theme, setTheme }) => {
         })}
       </div>
 
-      {/* Theme Toggle (Mobile & Desktop) */}
-      <div className="w-full md:mt-auto pt-2 border-t border-slate-800/50 md:border-t-0 flex justify-center md:justify-start">
+      {/* Bottom Actions (Sign Out & Theme) */}
+      <div className="w-full md:mt-auto pt-2 border-t border-slate-800/50 md:border-t-0 flex md:flex-col gap-1 justify-center md:justify-start">
+        {currentUser && (
+          <button
+            onClick={onSignOut}
+            className="flex flex-col md:flex-row items-center md:justify-start gap-1 md:gap-3 p-2 md:p-3 rounded-xl transition-all duration-300 w-full text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+          >
+            <LogOut className="w-6 h-6 md:w-5 md:h-5" />
+            <span className="text-[10px] md:text-sm font-medium">Sign Out</span>
+          </button>
+        )}
+
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className="flex flex-col md:flex-row items-center md:justify-start gap-1 md:gap-3 p-2 md:p-3 rounded-xl transition-all duration-300 w-full text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"

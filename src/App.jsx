@@ -7,19 +7,68 @@ import TimetableTab from './components/views/TimetableTab';
 import VaultTab from './components/views/VaultTab';
 import FinanceTab from './components/views/FinanceTab';
 import SettingsTab from './components/views/SettingsTab';
+import AdminTab from './components/views/AdminTab';
 import TaskEditModal from './components/TaskEditModal';
 import { AlarmOverlay } from './components/AlarmOverlay';
+import AuthOverlay from './components/AuthOverlay';
 import { useSchedule } from './hooks/useSchedule';
 import { useAudioAlarm } from './hooks/useAudioAlarm';
 import { useNotifications } from './hooks/useNotifications';
 import { ToastContainer } from './components/ToastContainer';
 
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, db } from './utils/firebase';
+
 function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('focus');
   const [editingTask, setEditingTask] = useState(null);
   const { sendNotification } = useNotifications();
 
   const [theme, setTheme] = useState(() => localStorage.getItem('duevault_theme') || 'dark');
+
+  // 1. Subscribe to Firebase Auth and check Admin Profile doc
+  useEffect(() => {
+    let unsubProfile = () => {};
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      if (user) {
+        // Subscribe to user profile document to check for isAdmin flag
+        const profileRef = doc(db, 'users', user.uid);
+        unsubProfile = onSnapshot(profileRef, (snap) => {
+          if (snap.exists() && snap.data().isAdmin) {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+          setAuthLoading(false);
+        }, (err) => {
+          console.error("Error subscribing to profile:", err);
+          setIsAdmin(false);
+          setAuthLoading(false);
+        });
+      } else {
+        setIsAdmin(false);
+        setAuthLoading(false);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      unsubProfile();
+    };
+  }, []);
+
+  const handleSignOut = () => {
+    signOut(auth).then(() => {
+      setCurrentUser(null);
+      setIsAdmin(false);
+      setActiveTab('focus');
+    }).catch(err => console.error("Sign out error:", err));
+  };
 
   useEffect(() => {
     document.documentElement.classList.remove('light-theme', 'dark-theme');
@@ -166,7 +215,6 @@ function App() {
 
   const handleToggleComplete = (taskId) => {
     const task = tasks.find(t => t.id === taskId) || routines.find(r => r.id === taskId) || todaysRoutines.find(r => r.id === taskId);
-    // Note: routines might not have 'completed' directly before toggle, but if we toggle it, we assume completion if it wasn't
     const isCompleted = task?.completed;
     if (task && !isCompleted) {
       sendNotification("Task Completed", `Excellent work finishing: ${task.title}`);
@@ -174,13 +222,36 @@ function App() {
     toggleComplete(taskId);
   };
 
+  // Auth Loading Render Gate
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-200">
+        <span className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-sm font-mono text-slate-400">Synchronizing security protocols...</p>
+      </div>
+    );
+  }
+
+  // Auth Sign-In Render Gate
+  if (!currentUser) {
+    return <AuthOverlay onAuthSuccess={(user) => setCurrentUser(user)} />;
+  }
+
   return (
     <div className={`min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col md:flex-row print:bg-white print:text-black ${theme === 'light' ? 'light-theme' : ''}`}>
         <ToastContainer />
 
         {/* Sidebar Navigation */}
         <div className="print:hidden h-full">
-          <Navigation activeTab={activeTab} setActiveTab={setActiveTab} theme={theme} setTheme={setTheme} />
+          <Navigation 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            theme={theme} 
+            setTheme={setTheme} 
+            currentUser={currentUser}
+            isAdmin={isAdmin}
+            onSignOut={handleSignOut}
+          />
         </div>
 
         {/* Main Content Area */}
@@ -284,6 +355,10 @@ function App() {
             />
           )}
 
+          {activeTab === 'admin' && isAdmin && (
+            <AdminTab />
+          )}
+
         </main>
 
         {/* Global Modals & Overlays */}
@@ -302,7 +377,7 @@ function App() {
         />
 
       </div>
-    );
-  }
+  );
+}
 
-  export default App;
+export default App;

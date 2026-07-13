@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { auth, db } from '../utils/firebase';
 
 const defaultFinances = {
   wallets: {
@@ -21,28 +24,86 @@ const defaultFinances = {
 };
 
 export const useFinances = () => {
-  const [finances, setFinances] = useState(() => {
-    const saved = localStorage.getItem('duevault_finances');
-    if (saved) {
-      try { 
-        const parsed = JSON.parse(saved);
-        // Migration from old schema if needed
-        let transactions = parsed.transactions || [];
-        if (parsed.expenses && transactions.length === 0) {
-          transactions = parsed.expenses.map(e => ({...e, type: 'EXPENSE'}));
-        }
-        return { 
-          ...defaultFinances, 
-          ...parsed, 
-          transactions,
-          monthlyBudget: { ...defaultFinances.monthlyBudget, ...(parsed.monthlyBudget || {}) }
-        };
-      } catch (e) { }
-    }
-    localStorage.setItem('duevault_finances', JSON.stringify(defaultFinances));
-    return defaultFinances;
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [finances, setFinances] = useState(defaultFinances);
 
+  // Subscribe to Auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch / Sync Finances
+  useEffect(() => {
+    if (!currentUser) {
+      // Load offline from localStorage and reset states
+      const saved = localStorage.getItem('duevault_finances');
+      if (saved) {
+        try { 
+          const parsed = JSON.parse(saved);
+          let transactions = parsed.transactions || [];
+          if (parsed.expenses && transactions.length === 0) {
+            transactions = parsed.expenses.map(e => ({...e, type: 'EXPENSE'}));
+          }
+          setFinances({ 
+            ...defaultFinances, 
+            ...parsed, 
+            transactions,
+            monthlyBudget: { ...defaultFinances.monthlyBudget, ...(parsed.monthlyBudget || {}) }
+          });
+        } catch (e) {
+          setFinances(defaultFinances);
+        }
+      } else {
+        setFinances(defaultFinances);
+        localStorage.setItem('duevault_finances', JSON.stringify(defaultFinances));
+      }
+      return;
+    }
+
+    // Subscribe to Firestore finances document
+    const docRef = doc(db, 'users', currentUser.uid, 'finances', 'data');
+    const unsub = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const dbData = docSnap.data();
+        setFinances(prev => {
+          // Avoid infinite loops by only updating if there's a difference
+          if (JSON.stringify(prev) === JSON.stringify(dbData)) return prev;
+          return dbData;
+        });
+      } else {
+        // Document does not exist yet, initialize with local storage or defaults
+        const localSaved = localStorage.getItem('duevault_finances');
+        let initialData = defaultFinances;
+        if (localSaved) {
+          try { initialData = JSON.parse(localSaved); } catch (e) {}
+        }
+        setDoc(docRef, initialData);
+        setFinances(initialData);
+      }
+    });
+
+    return () => unsub();
+  }, [currentUser]);
+
+  // Helper function to dispatch state updates safely to Firestore or LocalStorage
+  const saveFinancesData = async (updatedFinances) => {
+    setFinances(updatedFinances);
+    if (currentUser) {
+      try {
+        const docRef = doc(db, 'users', currentUser.uid, 'finances', 'data');
+        await setDoc(docRef, updatedFinances);
+      } catch (err) {
+        console.error("Error writing finances to Firestore:", err);
+      }
+    } else {
+      localStorage.setItem('duevault_finances', JSON.stringify(updatedFinances));
+    }
+  };
+
+  // Keep monthly/weekly budget spent and income calculated automatically
   useEffect(() => {
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -72,15 +133,15 @@ export const useFinances = () => {
     
     if (finances.monthlyBudget.spent !== totalSpentMonth || finances.monthlyBudget.income !== totalIncomeMonth || 
         finances.weeklyBudget?.spent !== totalSpentWeek || finances.weeklyBudget?.income !== totalIncomeWeek) {
-      setFinances(prev => ({
-        ...prev,
-        monthlyBudget: { ...prev.monthlyBudget, spent: totalSpentMonth, income: totalIncomeMonth },
-        weeklyBudget: { ...(prev.weeklyBudget || defaultFinances.weeklyBudget), spent: totalSpentWeek, income: totalIncomeWeek }
-      }));
-    } else {
-      localStorage.setItem('duevault_finances', JSON.stringify(finances));
+      const nextFinances = {
+        ...finances,
+        monthlyBudget: { ...finances.monthlyBudget, spent: totalSpentMonth, income: totalIncomeMonth },
+        weeklyBudget: { ...(finances.weeklyBudget || defaultFinances.weeklyBudget), spent: totalSpentWeek, income: totalIncomeWeek }
+      };
+      
+      saveFinancesData(nextFinances);
     }
-  }, [finances]);
+  }, [finances.transactions, currentUser]);
 
   const addTransaction = (txData) => {
     const newTx = {
@@ -93,111 +154,110 @@ export const useFinances = () => {
       category: txData.category || 'other'
     };
 
-    setFinances(prev => {
-      const updatedWallets = { ...prev.wallets };
-      if (updatedWallets[newTx.sourceWallet]) {
-        if (newTx.type === 'EXPENSE') {
-          updatedWallets[newTx.sourceWallet].balance -= newTx.amount;
-        } else {
-          updatedWallets[newTx.sourceWallet].balance += newTx.amount;
-        }
+    const updatedWallets = { ...finances.wallets };
+    if (updatedWallets[newTx.sourceWallet]) {
+      if (newTx.type === 'EXPENSE') {
+        updatedWallets[newTx.sourceWallet].balance -= newTx.amount;
+      } else {
+        updatedWallets[newTx.sourceWallet].balance += newTx.amount;
       }
+    }
 
-      return {
-        ...prev,
-        wallets: updatedWallets,
-        transactions: [newTx, ...(prev.transactions || [])]
-      };
-    });
+    const nextFinances = {
+      ...finances,
+      wallets: updatedWallets,
+      transactions: [newTx, ...(finances.transactions || [])]
+    };
+    saveFinancesData(nextFinances);
   };
 
   const deleteTransaction = (id) => {
-    setFinances(prev => {
-      const txToDel = (prev.transactions || []).find(e => e.id === id);
-      if (!txToDel) return prev;
+    const txToDel = (finances.transactions || []).find(e => e.id === id);
+    if (!txToDel) return;
 
-      const updatedWallets = { ...prev.wallets };
-      if (updatedWallets[txToDel.sourceWallet]) {
-        if (txToDel.type === 'EXPENSE') {
-          updatedWallets[txToDel.sourceWallet].balance += txToDel.amount;
-        } else {
-          updatedWallets[txToDel.sourceWallet].balance -= txToDel.amount;
-        }
+    const updatedWallets = { ...finances.wallets };
+    if (updatedWallets[txToDel.sourceWallet]) {
+      if (txToDel.type === 'EXPENSE') {
+        updatedWallets[txToDel.sourceWallet].balance += txToDel.amount;
+      } else {
+        updatedWallets[txToDel.sourceWallet].balance -= txToDel.amount;
       }
+    }
 
-      return {
-        ...prev,
-        wallets: updatedWallets,
-        transactions: prev.transactions.filter(e => e.id !== id)
-      };
-    });
+    const nextFinances = {
+      ...finances,
+      wallets: updatedWallets,
+      transactions: finances.transactions.filter(e => e.id !== id)
+    };
+    saveFinancesData(nextFinances);
   };
 
   const editTransaction = (id, updatedData) => {
-    setFinances(prev => {
-      const oldTx = (prev.transactions || []).find(e => e.id === id);
-      if (!oldTx) return prev;
+    const oldTx = (finances.transactions || []).find(e => e.id === id);
+    if (!oldTx) return;
 
-      const updatedWallets = { ...prev.wallets };
+    const updatedWallets = { ...finances.wallets };
 
-      // 1. Revert the old transaction's wallet impact
-      if (updatedWallets[oldTx.sourceWallet]) {
-        if (oldTx.type === 'EXPENSE') {
-          updatedWallets[oldTx.sourceWallet].balance += oldTx.amount;
-        } else {
-          updatedWallets[oldTx.sourceWallet].balance -= oldTx.amount;
-        }
+    // 1. Revert the old transaction's wallet impact
+    if (updatedWallets[oldTx.sourceWallet]) {
+      if (oldTx.type === 'EXPENSE') {
+        updatedWallets[oldTx.sourceWallet].balance += oldTx.amount;
+      } else {
+        updatedWallets[oldTx.sourceWallet].balance -= oldTx.amount;
       }
+    }
 
-      // Create the updated transaction object
-      const updatedTx = {
-        ...oldTx,
-        title: updatedData.title,
-        amount: Number(updatedData.amount),
-        date: updatedData.date,
-        sourceWallet: updatedData.sourceWallet,
-        category: updatedData.category || 'other',
-        type: updatedData.type || 'EXPENSE'
-      };
+    // Create the updated transaction object
+    const updatedTx = {
+      ...oldTx,
+      title: updatedData.title,
+      amount: Number(updatedData.amount),
+      date: updatedData.date,
+      sourceWallet: updatedData.sourceWallet,
+      category: updatedData.category || 'other',
+      type: updatedData.type || 'EXPENSE'
+    };
 
-      // 2. Apply the new transaction's wallet impact
-      if (updatedWallets[updatedTx.sourceWallet]) {
-        if (updatedTx.type === 'EXPENSE') {
-          updatedWallets[updatedTx.sourceWallet].balance -= updatedTx.amount;
-        } else {
-          updatedWallets[updatedTx.sourceWallet].balance += updatedTx.amount;
-        }
+    // 2. Apply the new transaction's wallet impact
+    if (updatedWallets[updatedTx.sourceWallet]) {
+      if (updatedTx.type === 'EXPENSE') {
+        updatedWallets[updatedTx.sourceWallet].balance -= updatedTx.amount;
+      } else {
+        updatedWallets[updatedTx.sourceWallet].balance += updatedTx.amount;
       }
+    }
 
-      // 3. Update the transaction in the list
-      const updatedTransactions = (prev.transactions || []).map(tx => tx.id === id ? updatedTx : tx);
+    // 3. Update the transaction in the list
+    const updatedTransactions = (finances.transactions || []).map(tx => tx.id === id ? updatedTx : tx);
 
-      return {
-        ...prev,
-        wallets: updatedWallets,
-        transactions: updatedTransactions
-      };
-    });
+    const nextFinances = {
+      ...finances,
+      wallets: updatedWallets,
+      transactions: updatedTransactions
+    };
+    saveFinancesData(nextFinances);
   };
 
   const updateWalletBalance = (walletId, newBalance) => {
-    setFinances(prev => ({
-      ...prev,
+    const nextFinances = {
+      ...finances,
       wallets: {
-        ...prev.wallets,
-        [walletId]: { ...prev.wallets[walletId], balance: Number(newBalance) }
+        ...finances.wallets,
+        [walletId]: { ...finances.wallets[walletId], balance: Number(newBalance) }
       }
-    }));
+    };
+    saveFinancesData(nextFinances);
   };
 
   const updateWalletStartingBalance = (walletId, newStartingBalance) => {
-    setFinances(prev => ({
-      ...prev,
+    const nextFinances = {
+      ...finances,
       wallets: {
-        ...prev.wallets,
-        [walletId]: { ...prev.wallets[walletId], startingBalance: Number(newStartingBalance) }
+        ...finances.wallets,
+        [walletId]: { ...finances.wallets[walletId], startingBalance: Number(newStartingBalance) }
       }
-    }));
+    };
+    saveFinancesData(nextFinances);
   };
 
   const addWallet = (name, balance, isHidden = false, spendLimit = 0, limitEnabled = false) => {
@@ -211,24 +271,24 @@ export const useFinances = () => {
       spendLimit: Number(spendLimit),
       limitEnabled
     };
-    setFinances(prev => ({
-      ...prev,
+    const nextFinances = {
+      ...finances,
       wallets: {
-        ...prev.wallets,
+        ...finances.wallets,
         [id]: newWallet
       }
-    }));
+    };
+    saveFinancesData(nextFinances);
   };
 
   const deleteWallet = (walletId) => {
-    setFinances(prev => {
-      const nextWallets = { ...prev.wallets };
-      delete nextWallets[walletId];
-      return {
-        ...prev,
-        wallets: nextWallets
-      };
-    });
+    const nextWallets = { ...finances.wallets };
+    delete nextWallets[walletId];
+    const nextFinances = {
+      ...finances,
+      wallets: nextWallets
+    };
+    saveFinancesData(nextFinances);
   };
 
   const getWeekIdentifier = (date) => {
@@ -242,99 +302,108 @@ export const useFinances = () => {
   };
 
   const resetWalletsToStarting = () => {
-    setFinances(prev => {
-      const nextWallets = {};
-      Object.keys(prev.wallets).forEach(k => {
-        nextWallets[k] = {
-          ...prev.wallets[k],
-          balance: prev.wallets[k].startingBalance
-        };
-      });
-      return {
-        ...prev,
-        wallets: nextWallets,
-        lastResetWeek: getWeekIdentifier(new Date())
+    const nextWallets = {};
+    Object.keys(finances.wallets).forEach(k => {
+      nextWallets[k] = {
+        ...finances.wallets[k],
+        balance: finances.wallets[k].startingBalance
       };
     });
+    const nextFinances = {
+      ...finances,
+      wallets: nextWallets,
+      lastResetWeek: getWeekIdentifier(new Date())
+    };
+    saveFinancesData(nextFinances);
   };
 
   const dismissResetWeek = () => {
-    setFinances(prev => ({
-      ...prev,
+    const nextFinances = {
+      ...finances,
       lastResetWeek: getWeekIdentifier(new Date())
-    }));
+    };
+    saveFinancesData(nextFinances);
   };
 
   const setWalletLimitEnabled = (walletId, enabled) => {
-    setFinances(prev => ({
-      ...prev,
+    const nextFinances = {
+      ...finances,
       wallets: {
-        ...prev.wallets,
-        [walletId]: { ...prev.wallets[walletId], limitEnabled: enabled }
+        ...finances.wallets,
+        [walletId]: { ...finances.wallets[walletId], limitEnabled: enabled }
       }
-    }));
+    };
+    saveFinancesData(nextFinances);
   };
 
   const setBudgetLimit = (limit) => {
-    setFinances(prev => ({
-      ...prev,
-      monthlyBudget: { ...prev.monthlyBudget, limit: Number(limit) }
-    }));
+    const nextFinances = {
+      ...finances,
+      monthlyBudget: { ...finances.monthlyBudget, limit: Number(limit) }
+    };
+    saveFinancesData(nextFinances);
   };
 
   const setWeeklyLimit = (limit) => {
-    setFinances(prev => ({
-      ...prev,
-      weeklyBudget: { ...(prev.weeklyBudget || defaultFinances.weeklyBudget), limit: Number(limit) }
-    }));
+    const nextFinances = {
+      ...finances,
+      weeklyBudget: { ...(finances.weeklyBudget || defaultFinances.weeklyBudget), limit: Number(limit) }
+    };
+    saveFinancesData(nextFinances);
   };
 
   const saveReport = (reportData) => {
-    setFinances(prev => ({
-      ...prev,
-      reports: [{ id: Date.now().toString(), date: new Date().toLocaleString(), ...reportData }, ...(prev.reports || [])]
-    }));
+    const nextFinances = {
+      ...finances,
+      reports: [{ id: Date.now().toString(), date: new Date().toLocaleString(), ...reportData }, ...(finances.reports || [])]
+    };
+    saveFinancesData(nextFinances);
   };
 
   const toggleWalletVisibility = (walletId) => {
-    setFinances(prev => ({
-      ...prev,
+    const nextFinances = {
+      ...finances,
       wallets: {
-        ...prev.wallets,
-        [walletId]: { ...prev.wallets[walletId], isHidden: !prev.wallets[walletId].isHidden }
+        ...finances.wallets,
+        [walletId]: { ...finances.wallets[walletId], isHidden: !finances.wallets[walletId].isHidden }
       }
-    }));
+    };
+    saveFinancesData(nextFinances);
   };
 
   const setWalletSpendLimit = (walletId, newLimit) => {
-    setFinances(prev => ({
-      ...prev,
+    const nextFinances = {
+      ...finances,
       wallets: {
-        ...prev.wallets,
-        [walletId]: { ...prev.wallets[walletId], spendLimit: Number(newLimit) }
+        ...finances.wallets,
+        [walletId]: { ...finances.wallets[walletId], spendLimit: Number(newLimit) }
       }
-    }));
+    };
+    saveFinancesData(nextFinances);
   };
 
   const addGoal = (goal) => {
-    setFinances(prev => ({
-      ...prev,
-      goals: [...(prev.goals || []), { ...goal, id: Date.now().toString() }]
-    }));
+    const nextFinances = {
+      ...finances,
+      goals: [...(finances.goals || []), { ...goal, id: Date.now().toString() }]
+    };
+    saveFinancesData(nextFinances);
   };
 
   const updateGoal = (id, amount) => {
-    setFinances(prev => ({
-      ...prev,
-      goals: (prev.goals || []).map(g => g.id === id ? { ...g, current: parseFloat(amount) || 0 } : g)
-    }));
+    const nextFinances = {
+      ...finances,
+      goals: (finances.goals || []).map(g => g.id === id ? { ...g, current: parseFloat(amount) || 0 } : g)
+    };
+    saveFinancesData(nextFinances);
   };
 
   const deleteGoal = (id) => {
-    setFinances(prev => ({
-      ...prev,
-      goals: (prev.goals || []).filter(g => g.id !== id)
-    }));
+    const nextFinances = {
+      ...finances,
+      goals: (finances.goals || []).filter(g => g.id !== id)
+    };
+    saveFinancesData(nextFinances);
   };
 
   return {

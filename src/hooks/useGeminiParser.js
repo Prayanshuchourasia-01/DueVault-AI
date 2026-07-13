@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { auth, db } from '../utils/firebase';
+import { collection, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 export const useGeminiParser = () => {
   const [isParsing, setIsParsing] = useState(false);
@@ -55,6 +57,36 @@ export const useGeminiParser = () => {
     // Record current request
     timestamps.push(now);
     localStorage.setItem('duevault_api_timestamps', JSON.stringify(timestamps));
+  };
+
+  const logGeminiUsage = async (actionType, textSnippet) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    try {
+      let name = '';
+      let username = 'anonymous';
+      let email = user.email || '';
+      
+      const profileSnap = await getDoc(doc(db, 'users', user.uid));
+      if (profileSnap.exists()) {
+        const profileData = profileSnap.data();
+        username = profileData.username || username;
+        name = profileData.name || name;
+      }
+      
+      const logRef = doc(collection(db, 'gemini_logs'));
+      await setDoc(logRef, {
+        userId: user.uid,
+        username,
+        name,
+        email,
+        timestamp: serverTimestamp(),
+        action: actionType,
+        inputSnippet: textSnippet ? textSnippet.substring(0, 100) : ''
+      });
+    } catch (err) {
+      console.error('Error logging Gemini usage:', err);
+    }
   };
 
   const parseTaskText = async (text) => {
@@ -145,6 +177,10 @@ Instructions:
       }
 
       setIsParsing(false);
+      
+      // Log usage for audit panel
+      await logGeminiUsage('task_nlp_parse', text);
+      
       return parsedTask;
 
     } catch (err) {
@@ -207,6 +243,10 @@ Instructions:
       
       const parsedArray = JSON.parse(textResult);
       setIsParsing(false);
+      
+      // Log usage for audit panel
+      await logGeminiUsage('html_schedule_extract', `HTML Length: ${htmlText.length}`);
+      
       return Array.isArray(parsedArray) ? parsedArray : [];
       
     } catch (err) {
