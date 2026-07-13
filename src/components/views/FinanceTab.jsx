@@ -1107,7 +1107,8 @@ const FinanceTab = ({ tasks, sendNotification, onUpdateTask }) => {
               </div>
             </div>
             
-            <div className="p-0 overflow-x-auto">
+            {/* Desktop Ledger Table */}
+            <div className="p-0 overflow-x-auto hidden md:block">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-800/30 text-slate-500 text-xs uppercase tracking-wider">
@@ -1146,13 +1147,13 @@ const FinanceTab = ({ tasks, sendNotification, onUpdateTask }) => {
                         </td>
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => setEditingTx(tx)} className="text-slate-500 hover:text-cyan-400 transition-colors" title="Edit Transaction">
+                            <button onClick={() => setEditingTx(tx)} className="text-slate-500 hover:text-cyan-400 transition-colors cursor-pointer" title="Edit Transaction">
                               <Pencil className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleStartSplit(tx)} className="text-slate-500 hover:text-indigo-400 transition-colors" title="Split Transaction">
+                            <button onClick={() => handleStartSplit(tx)} className="text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer" title="Split Transaction">
                               <Scissors className="w-4 h-4" />
                             </button>
-                            <button onClick={() => deleteTransaction(tx.id)} className="text-slate-600 hover:text-red-400 transition-colors" title="Delete Transaction">
+                            <button onClick={() => deleteTransaction(tx.id)} className="text-slate-600 hover:text-red-400 transition-colors cursor-pointer" title="Delete Transaction">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -1162,6 +1163,51 @@ const FinanceTab = ({ tasks, sendNotification, onUpdateTask }) => {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Stacked Card View */}
+            <div className="block md:hidden divide-y divide-slate-800/50">
+              {periodTransactions.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 italic text-xs">No transactions logged in {activeBounds.label}.</div>
+              ) : (
+                periodTransactions.map(tx => (
+                  <div key={tx.id} className="p-4 flex flex-col gap-3 hover:bg-slate-800/10 transition-colors">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        {tx.type === 'INCOME' ? (
+                          <span className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg shrink-0 mt-0.5"><TrendingUp className="w-4 h-4" /></span>
+                        ) : (
+                          <span className="p-2 bg-red-500/10 text-red-400 rounded-lg shrink-0 mt-0.5"><TrendingDown className="w-4 h-4" /></span>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-200 leading-snug break-words text-sm">{tx.title}</p>
+                          <span className="inline-block mt-1 text-[9px] font-bold px-2 py-0.5 bg-slate-800 text-slate-400 rounded-full border border-slate-700/60 uppercase tracking-wider">{tx.category}</span>
+                        </div>
+                      </div>
+                      <div className={`text-right font-mono font-bold text-base shrink-0 ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-slate-100'}`}>
+                        {tx.type === 'INCOME' ? '+' : '-'}₹{tx.amount.toFixed(2)}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2.5 border-t border-slate-850 text-xs">
+                      <div className="text-slate-400 font-medium text-[11px]">
+                        <span>{tx.date}</span> &bull; <span className="font-mono text-[10px]">{finances.wallets[tx.sourceWallet]?.name || 'Unknown'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => setEditingTx(tx)} className="p-2 text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer" title="Edit">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleStartSplit(tx)} className="p-2 text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer" title="Split">
+                          <Scissors className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deleteTransaction(tx.id)} className="p-2 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

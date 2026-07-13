@@ -7,8 +7,19 @@ export const useGeminiParser = () => {
   const [parseError, setParseError] = useState(null);
 
   const getApiKey = () => {
-    const savedKeyBase64 = localStorage.getItem('duevault_gemini_key');
+    const user = auth.currentUser;
+    const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
+    const savedKeyBase64 = localStorage.getItem(keyName);
     if (!savedKeyBase64) {
+      // Check general fallback if user-scoped is empty
+      const fallback = localStorage.getItem('duevault_gemini_key');
+      if (fallback) {
+        try {
+          return atob(fallback);
+        } catch (e) {
+          return fallback;
+        }
+      }
       throw new Error('Gemini API Key is missing. Please add your key in Settings.');
     }
     try {

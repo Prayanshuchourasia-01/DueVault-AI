@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Key, Eye, EyeOff, ShieldAlert, Lock, Check } from 'lucide-react';
+import { auth } from '../utils/firebase';
 
 export const SettingsModal = ({ isOpen, onClose }) => {
   const [apiKey, setApiKey] = useState('');
@@ -7,13 +8,32 @@ export const SettingsModal = ({ isOpen, onClose }) => {
   const [savedStatus, setSavedStatus] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('duevault_gemini_key') || '';
-    setApiKey(saved);
+    const user = auth.currentUser;
+    const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
+    let savedKeyBase64 = localStorage.getItem(keyName) || '';
+    if (!savedKeyBase64 && user) {
+      savedKeyBase64 = localStorage.getItem('duevault_gemini_key') || '';
+    }
+    let decodedKey = '';
+    if (savedKeyBase64) {
+      try {
+        decodedKey = atob(savedKeyBase64);
+      } catch (e) {
+        decodedKey = savedKeyBase64;
+      }
+    }
+    setApiKey(decodedKey);
   }, [isOpen]);
 
   const handleSave = (e) => {
     e.preventDefault();
-    localStorage.setItem('duevault_gemini_key', apiKey.trim());
+    const user = auth.currentUser;
+    const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
+    if (apiKey.trim()) {
+      localStorage.setItem(keyName, btoa(apiKey.trim()));
+    } else {
+      localStorage.removeItem(keyName);
+    }
     setSavedStatus(true);
     setTimeout(() => {
       setSavedStatus(false);
@@ -23,7 +43,12 @@ export const SettingsModal = ({ isOpen, onClose }) => {
 
   const handleClear = () => {
     if (confirm('Clear API Key from local storage? Connection to Gemini NLP will be deactivated.')) {
-      localStorage.removeItem('duevault_gemini_key');
+      const user = auth.currentUser;
+      const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
+      localStorage.removeItem(keyName);
+      if (user) {
+        localStorage.removeItem('duevault_gemini_key');
+      }
       setApiKey('');
       onClose();
     }

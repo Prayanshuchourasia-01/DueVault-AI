@@ -121,7 +121,9 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
               <h3 className="font-bold text-white uppercase tracking-wider text-sm">{title}</h3>
               <span className="ml-auto text-xs font-mono bg-slate-800 text-slate-400 px-2 py-1 rounded">{list.length} Items</span>
             </div>
-            <div className="overflow-x-auto">
+
+            {/* Desktop Table View */}
+            <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-left border-collapse">
                 <tbody>
                   {list.length === 0 ? (
@@ -134,14 +136,14 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
                     list.map(task => (
                       <tr key={task.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group">
                         <td className="p-4 w-16">
-                          <button onClick={() => onToggleComplete(task.id)} className="text-slate-500 hover:text-emerald-400 transition-colors">
+                          <button onClick={() => onToggleComplete(task.id)} className="text-slate-500 hover:text-emerald-400 transition-colors cursor-pointer">
                             {task.completed ? <CheckCircle2 className="w-6 h-6 text-emerald-400" /> : <Circle className="w-6 h-6" />}
                           </button>
                         </td>
                         <td className="p-4 font-bold text-white max-w-xs">
                           <span className={task.completed ? "line-through text-slate-500 font-normal" : ""}>{task.title}</span>
                           {task.amount !== undefined && (
-                            <span className="inline-block ml-1.5 bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[10px] px-1 py-0.5 rounded font-mono font-bold">
+                            <span className="inline-block ml-1.5 bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold">
                               ₹{task.amount}
                             </span>
                           )}
@@ -159,10 +161,10 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
                           </span>
                         </td>
                         <td className="p-4 text-right whitespace-nowrap">
-                          <button onClick={() => onEditTask(task)} className="p-2 text-slate-500 hover:text-indigo-400 transition-colors">
+                          <button onClick={() => onEditTask(task)} className="p-2 text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer">
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => onDeleteTask(task.id)} className="p-2 text-slate-500 hover:text-red-400 transition-colors ml-1">
+                          <button onClick={() => onDeleteTask(task.id)} className="p-2 text-slate-500 hover:text-red-400 transition-colors ml-1 cursor-pointer">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
@@ -172,6 +174,65 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Stacked Card View */}
+            <div className="block md:hidden divide-y divide-slate-800/50">
+              {list.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 italic text-xs">
+                  No tasks found in this timeframe.
+                </div>
+              ) : (
+                list.map(task => (
+                  <div key={task.id} className="p-4 flex flex-col gap-3.5 hover:bg-slate-800/10 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <button onClick={() => onToggleComplete(task.id)} className="text-slate-500 hover:text-emerald-400 transition-colors mt-0.5 shrink-0 cursor-pointer">
+                          {task.completed ? <CheckCircle2 className="w-5.5 h-5.5 text-emerald-400" /> : <Circle className="w-5.5 h-5.5" />}
+                        </button>
+                        <div className="min-w-0">
+                          <p className={`font-bold text-slate-200 leading-snug break-words text-sm ${task.completed ? "line-through text-slate-500 font-normal" : ""}`}>
+                            {task.title}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {task.amount !== undefined && (
+                              <span className="bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[9px] px-1.5 py-0.5 rounded font-mono font-bold">
+                                ₹{task.amount}
+                              </span>
+                            )}
+                            <span className="font-semibold text-slate-400 uppercase tracking-widest text-[8px] bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700/60">
+                              {task.category}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${priorityColors[task.priority] || priorityColors['LOW']} shrink-0`}>
+                        {task.priority}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2.5 border-t border-slate-850 text-xs">
+                      <div className="text-slate-400 font-medium text-[11px]">
+                        <span>{task.date}</span>
+                        {task.start && (
+                          <span className="ml-1.5 font-mono text-[10px] bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                            {new Date(task.start).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => onEditTask(task)} className="p-2 text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => onDeleteTask(task.id)} className="p-2 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
           </div>
         );
 

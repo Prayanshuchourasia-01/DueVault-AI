@@ -3,6 +3,7 @@ import { Settings2, Key, Bell, Volume2, Save, ShieldAlert, Code, UploadCloud, Do
 import { useAudioAlarm } from '../../hooks/useAudioAlarm';
 import { useNotifications } from '../../hooks/useNotifications';
 import HTMLImporter from '../HTMLImporter';
+import { auth } from '../../utils/firebase';
 
 const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
   const [apiKey, setApiKey] = useState('');
@@ -13,7 +14,12 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
   const { permission, askPermission } = useNotifications();
 
   useEffect(() => {
-    const savedKeyBase64 = localStorage.getItem('duevault_gemini_key') || '';
+    const user = auth.currentUser;
+    const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
+    let savedKeyBase64 = localStorage.getItem(keyName) || '';
+    if (!savedKeyBase64 && user) {
+      savedKeyBase64 = localStorage.getItem('duevault_gemini_key') || '';
+    }
     let decodedKey = '';
     if (savedKeyBase64) {
       try {
@@ -28,7 +34,13 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
   }, []);
 
   const handleSave = () => {
-    localStorage.setItem('duevault_gemini_key', btoa(apiKey.trim()));
+    const user = auth.currentUser;
+    const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
+    if (apiKey.trim()) {
+      localStorage.setItem(keyName, btoa(apiKey.trim()));
+    } else {
+      localStorage.removeItem(keyName);
+    }
     localStorage.setItem('duevault_ringtone', ringtone);
     setSavedMessage('Settings saved successfully!');
     setTimeout(() => setSavedMessage(''), 3000);

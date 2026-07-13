@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Terminal, ArrowRight, Loader2, Info } from 'lucide-react';
 import { useGeminiParser } from '../hooks/useGeminiParser';
+import { auth } from '../utils/firebase';
 
 const SUGGESTIONS = [
   "Add Practice coding today from 16:00 to 18:00",
@@ -18,7 +19,12 @@ export const InputEngine = ({ apiKey, onAddTask, onOpenSettings }) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    const apiKey = localStorage.getItem('duevault_gemini_key');
+    const user = auth.currentUser;
+    const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
+    let apiKey = localStorage.getItem(keyName);
+    if (!apiKey && user) {
+      apiKey = localStorage.getItem('duevault_gemini_key');
+    }
     if (!apiKey) {
       setLocalError("Gemini API Key is missing. Please go to the Settings tab on the left to add it.");
       return;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileUp, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useGeminiParser } from '../hooks/useGeminiParser';
+import { auth } from '../utils/firebase';
 
 const HTMLImporter = ({ onTasksExtracted, clearRoutines }) => {
   const [file, setFile] = useState(null);
@@ -22,7 +23,12 @@ const HTMLImporter = ({ onTasksExtracted, clearRoutines }) => {
   const handleUpload = () => {
     if (!file) return;
 
-    const apiKey = localStorage.getItem('duevault_gemini_key');
+    const user = auth.currentUser;
+    const keyName = user ? `duevault_gemini_key_${user.uid}` : 'duevault_gemini_key';
+    let apiKey = localStorage.getItem(keyName);
+    if (!apiKey && user) {
+      apiKey = localStorage.getItem('duevault_gemini_key');
+    }
     if (!apiKey) {
       alert("Please save your Gemini API Key in the settings panel first.");
       return;
