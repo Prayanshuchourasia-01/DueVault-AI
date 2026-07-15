@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings2, Key, Bell, Volume2, Save, ShieldAlert, Code, UploadCloud, DownloadCloud, AlertTriangle } from 'lucide-react';
+import { Settings2, Key, Bell, Volume2, Save, ShieldAlert, UploadCloud, DownloadCloud, AlertTriangle } from 'lucide-react';
 import { useAudioAlarm } from '../../hooks/useAudioAlarm';
 import { useNotifications } from '../../hooks/useNotifications';
 import HTMLImporter from '../HTMLImporter';

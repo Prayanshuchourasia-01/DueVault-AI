@@ -1,6 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { Wallet, TrendingDown, TrendingUp, DollarSign, Plus, Trash2, Scissors, CalendarDays, Activity, PieChart, ShieldCheck, Eye, EyeOff, BarChart3, X, CheckSquare, Square, AlertTriangle, CalendarRange, Pencil } from 'lucide-react';
+import { Wallet, TrendingDown, TrendingUp, Plus, Trash2, Scissors, CalendarDays, Activity, PieChart, ShieldCheck, Eye, EyeOff, BarChart3, X, Pencil } from 'lucide-react';
 import { useFinances } from '../../hooks/useFinances';
+
+const CATEGORY_COLORS = {
+  food: '#f43f5e',       // rose
+  leisure: '#06b6d4',    // cyan
+  bills: '#6366f1',      // indigo
+  shopping: '#a855f7',   // purple
+  rent: '#e11d48',       // red
+  travel: '#10b981',     // emerald
+  entertainment: '#ec4899', // pink
+  groceries: '#f59e0b',  // amber
+  other: '#64748b'       // slate
+};
 
 const FinanceTab = ({ tasks, sendNotification, onUpdateTask }) => {
   const { 
@@ -56,70 +68,69 @@ const FinanceTab = ({ tasks, sendNotification, onUpdateTask }) => {
     part2: { title: '', amount: '', category: '', sourceWallet: '' }
   });
 
-  // Period ranges calculation
-  const today = new Date();
-  const day = today.getDay() || 7; // Sunday is 7
-  
-  // Current Week (Monday to Sunday)
-  const startOfThisWeek = new Date(today);
-  startOfThisWeek.setDate(today.getDate() - day + 1);
-  startOfThisWeek.setHours(0,0,0,0);
-  
-  const endOfThisWeek = new Date(startOfThisWeek);
-  endOfThisWeek.setDate(startOfThisWeek.getDate() + 6);
-  endOfThisWeek.setHours(23,59,59,999);
-
-  // Previous Week (Monday to Sunday of last week)
-  const startOfPrevWeek = new Date(startOfThisWeek);
-  startOfPrevWeek.setDate(startOfThisWeek.getDate() - 7);
-  startOfPrevWeek.setHours(0,0,0,0);
-  
-  const endOfPrevWeek = new Date(startOfPrevWeek);
-  endOfPrevWeek.setDate(startOfPrevWeek.getDate() + 6);
-  endOfPrevWeek.setHours(23,59,59,999);
-
-  // Previous Month (e.g. 1st to 30th/31st of previous month)
-  const startOfPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const endOfPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-  endOfPrevMonth.setHours(23,59,59,999);
-
-  // Last 3 Weeks (Current week + preceding 2 weeks, i.e., 21 days)
-  const startOfLast3Weeks = new Date(startOfThisWeek);
-  startOfLast3Weeks.setDate(startOfThisWeek.getDate() - 14);
-  startOfLast3Weeks.setHours(0,0,0,0);
-
-  // Current Month (1st to end of current month)
-  const startOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const endOfThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  endOfThisMonth.setHours(23,59,59,999);
-
   // Expose period state bounds
   const activeBounds = useMemo(() => {
-    if (activePeriod === 'CURRENT_WEEK') return { start: startOfThisWeek, end: endOfThisWeek, label: 'Current Week' };
-    if (activePeriod === 'PREV_WEEK') return { start: startOfPrevWeek, end: endOfPrevWeek, label: 'Previous Week' };
-    if (activePeriod === 'LAST_3_WEEKS') return { start: startOfLast3Weeks, end: endOfThisWeek, label: 'Last 3 Weeks' };
-    if (activePeriod === 'CURRENT_MONTH') return { start: startOfThisMonth, end: endOfThisMonth, label: 'Current Month' };
-    return { start: startOfPrevMonth, end: endOfPrevMonth, label: 'Previous Month' };
-  }, [activePeriod, startOfThisWeek, endOfThisWeek, startOfPrevWeek, endOfPrevWeek, startOfLast3Weeks, startOfThisMonth, endOfThisMonth, startOfPrevMonth, endOfPrevMonth]);
+    const today = new Date();
+    const day = today.getDay() || 7; // Sunday is 7
+
+    // Current Week (Monday to Sunday)
+    const startOfThisWeek = new Date(today);
+    startOfThisWeek.setDate(today.getDate() - day + 1);
+    startOfThisWeek.setHours(0,0,0,0);
+    
+    const endOfThisWeek = new Date(startOfThisWeek);
+    endOfThisWeek.setDate(startOfThisWeek.getDate() + 6);
+    endOfThisWeek.setHours(23,59,59,999);
+
+    // Previous Week (Monday to Sunday of last week)
+    const startOfPrevWeek = new Date(startOfThisWeek);
+    startOfPrevWeek.setDate(startOfThisWeek.getDate() - 7);
+    startOfPrevWeek.setHours(0,0,0,0);
+    
+    const endOfPrevWeek = new Date(startOfPrevWeek);
+    endOfPrevWeek.setDate(startOfPrevWeek.getDate() + 6);
+    endOfPrevWeek.setHours(23,59,59,999);
+
+    // Previous Month (e.g. 1st to 30th/31st of previous month)
+    const startOfPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const endOfPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    endOfPrevMonth.setHours(23,59,59,999);
+
+    // Last 3 Weeks (Current week + preceding 2 weeks, i.e., 21 days)
+    const startOfLast3Weeks = new Date(startOfThisWeek);
+    startOfLast3Weeks.setDate(startOfThisWeek.getDate() - 14);
+    startOfLast3Weeks.setHours(0,0,0,0);
+
+    // Current Month (1st to end of current month)
+    const startOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endOfThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    endOfThisMonth.setHours(23,59,59,999);
+
+    if (activePeriod === 'CURRENT_WEEK') return { start: startOfThisWeek, end: endOfThisWeek, label: 'Current Week', startOfThisWeek, endOfThisWeek };
+    if (activePeriod === 'PREV_WEEK') return { start: startOfPrevWeek, end: endOfPrevWeek, label: 'Previous Week', startOfThisWeek, endOfThisWeek };
+    if (activePeriod === 'LAST_3_WEEKS') return { start: startOfLast3Weeks, end: endOfThisWeek, label: 'Last 3 Weeks', startOfThisWeek, endOfThisWeek };
+    if (activePeriod === 'CURRENT_MONTH') return { start: startOfThisMonth, end: endOfThisMonth, label: 'Current Month', startOfThisWeek, endOfThisWeek };
+    return { start: startOfPrevMonth, end: endOfPrevMonth, label: 'Previous Month', startOfThisWeek, endOfThisWeek };
+  }, [activePeriod]);
 
   // Check if a date string falls inside the active period
-  const isInActivePeriod = (dateStr) => {
+  const isInActivePeriod = React.useCallback((dateStr) => {
     const d = new Date(dateStr);
     d.setHours(12,0,0,0); // Avoid timezone shift
     return d >= activeBounds.start && d <= activeBounds.end;
-  };
+  }, [activeBounds.start, activeBounds.end]);
 
   // Check specifically for current week
-  const isInCurrentWeek = (dateStr) => {
+  const isInCurrentWeek = React.useCallback((dateStr) => {
     const d = new Date(dateStr);
     d.setHours(12,0,0,0);
-    return d >= startOfThisWeek && d <= endOfThisWeek;
-  };
+    return d >= activeBounds.startOfThisWeek && d <= activeBounds.endOfThisWeek;
+  }, [activeBounds.startOfThisWeek, activeBounds.endOfThisWeek]);
 
   // Filtered transactions for the current period selection
   const periodTransactions = useMemo(() => {
     return (finances.transactions || []).filter(tx => isInActivePeriod(tx.date));
-  }, [finances.transactions, activePeriod, activeBounds]);
+  }, [finances.transactions, isInActivePeriod]);
 
   // Cashflow for the period
   const cashflow = useMemo(() => {
@@ -188,19 +199,6 @@ const FinanceTab = ({ tasks, sendNotification, onUpdateTask }) => {
     : (finances.weeklyBudget?.limit || 200);
   const budgetPercent = Math.min((cashflow.spent / (budgetLimit || 1)) * 100, 100);
 
-  // Category colors mapping for charts
-  const categoryColors = {
-    food: '#f43f5e',       // rose
-    leisure: '#06b6d4',    // cyan
-    bills: '#6366f1',      // indigo
-    shopping: '#a855f7',   // purple
-    rent: '#e11d48',       // red
-    travel: '#10b981',     // emerald
-    entertainment: '#ec4899', // pink
-    groceries: '#f59e0b',  // amber
-    other: '#64748b'       // slate
-  };
-
   // 1. Category Allocation Donut Chart Data
   const categoryExpenses = useMemo(() => {
     const expenses = (periodTransactions || []).filter(tx => tx.type === 'EXPENSE');
@@ -224,7 +222,7 @@ const FinanceTab = ({ tasks, sendNotification, onUpdateTask }) => {
         percentage,
         strokeDashoffset,
         rotationOffset,
-        color: categoryColors[category] || categoryColors.other
+        color: CATEGORY_COLORS[category] || CATEGORY_COLORS.other
       };
     }).sort((a, b) => b.amount - a.amount);
   }, [periodTransactions]);

@@ -24,6 +24,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('focus');
   const [editingTask, setEditingTask] = useState(null);
@@ -43,24 +44,32 @@ function App() {
           if (snap.exists()) {
             const data = snap.data();
             setUserProfile(data);
-            setIsAdmin(data.isAdmin || false);
+            const isUserAdmin = data.isAdmin || false;
+            setIsAdmin(isUserAdmin);
+            setAdminMode(isUserAdmin);
+            if (isUserAdmin) {
+              setActiveTab('admin-dashboard');
+            }
             if (data.geminiApiKey) {
               localStorage.setItem(`duevault_gemini_key_${user.uid}`, data.geminiApiKey);
             }
           } else {
             setUserProfile(null);
             setIsAdmin(false);
+            setAdminMode(false);
           }
           setAuthLoading(false);
         }, (err) => {
           console.error("Error subscribing to profile:", err);
           setUserProfile(null);
           setIsAdmin(false);
+          setAdminMode(false);
           setAuthLoading(false);
         });
       } else {
         setUserProfile(null);
         setIsAdmin(false);
+        setAdminMode(false);
         setAuthLoading(false);
       }
     });
@@ -76,6 +85,7 @@ function App() {
       setCurrentUser(null);
       setUserProfile(null);
       setIsAdmin(false);
+      setAdminMode(false);
       setActiveTab('focus');
     }).catch(err => console.error("Sign out error:", err));
   };
@@ -337,12 +347,30 @@ function App() {
             setTheme={setTheme} 
             currentUser={currentUser}
             isAdmin={isAdmin}
+            adminMode={adminMode}
+            setAdminMode={setAdminMode}
             onSignOut={handleSignOut}
           />
         </div>
 
         {/* Main Content Area */}
         <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 print:p-0 print:h-auto print:overflow-visible">
+
+          {/* Admin Banner inside User View Mode */}
+          {isAdmin && !adminMode && (
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs px-4 py-2.5 rounded-xl flex items-center justify-between gap-4 mb-6 shadow-md shadow-amber-950/20 animate-fade-in print:hidden">
+              <div className="flex items-center gap-2">
+                <span className="animate-pulse">🔒</span>
+                <span>Administrative Mode: Running in User View Mode. Your workspace is synchronized.</span>
+              </div>
+              <button 
+                onClick={() => { setAdminMode(true); setActiveTab('admin-dashboard'); }}
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-[10px] cursor-pointer transition-colors"
+              >
+                Return to Admin Console
+              </button>
+            </div>
+          )}
 
           {/* Mobile Header (Hidden on Desktop) */}
           <div className="md:hidden flex justify-center items-center mb-6 pt-2 print:hidden">
@@ -442,8 +470,8 @@ function App() {
             />
           )}
 
-          {activeTab === 'admin' && isAdmin && (
-            <AdminTab />
+          {activeTab.startsWith('admin-') && isAdmin && (
+            <AdminTab subTab={activeTab} />
           )}
 
         </main>

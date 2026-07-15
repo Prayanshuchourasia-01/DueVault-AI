@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../../utils/firebase';
 import { 
   collection, 
@@ -19,13 +19,17 @@ import {
   DownloadCloud, 
   Globe, 
   CheckCircle, 
-  AlertTriangle,
   UserCheck,
   RefreshCw,
-  Search
+  Search,
+  ShieldCheck,
+  UserX,
+  FileCode2,
+  Lock,
+  Cpu
 } from 'lucide-react';
 
-const AdminTab = () => {
+const AdminTab = ({ subTab }) => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedUserData, setSelectedUserData] = useState({ tasks: [], routines: [], finances: {}, history: [] });
@@ -43,6 +47,11 @@ const AdminTab = () => {
   const [statusMsg, setStatusMsg] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', username: '', email: '', phone: '' });
+
+  // Timetable HTML Template states & handlers
+  const [templateHtml, setTemplateHtml] = useState('');
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [templateMsg, setTemplateMsg] = useState('');
 
   // 1. Fetch IP and verify against Firestore Admin IP whitelist
   useEffect(() => {
@@ -77,7 +86,6 @@ const AdminTab = () => {
         }
       } catch (err) {
         console.error("IP Verification failed:", err);
-        // Fallback to true if Firestore read fails due to offline context, but keep warning
         setIpAuthorized(false);
       } finally {
         setLoadingIp(false);
@@ -88,7 +96,7 @@ const AdminTab = () => {
   }, []);
 
   // 2. Fetch User Directory and Gemini Logs (only if IP and Firebase Auth Admin matches)
-  const fetchAdminData = async () => {
+  const fetchAdminData = useCallback(async () => {
     if (!ipAuthorized) return;
     setLoadingData(true);
     try {
@@ -113,13 +121,29 @@ const AdminTab = () => {
     } finally {
       setLoadingData(false);
     }
-  };
+  }, [ipAuthorized]);
 
   useEffect(() => {
     if (ipAuthorized) {
       fetchAdminData();
     }
-  }, [ipAuthorized]);
+  }, [ipAuthorized, fetchAdminData]);
+
+  // Fetch HTML Template for Importer
+  useEffect(() => {
+    const fetchTemplate = async () => {
+      try {
+        const docRef = doc(db, 'config', 'demo_html');
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          setTemplateHtml(snap.data().htmlContent || '');
+        }
+      } catch (err) {
+        console.error("Error fetching HTML template:", err);
+      }
+    };
+    fetchTemplate();
+  }, []);
 
   // 3. Fetch detailed user subcollections for backups/history
   const handleSelectUser = async (user) => {
@@ -238,26 +262,6 @@ const AdminTab = () => {
     }
   };
 
-  // Timetable HTML Template states & handlers
-  const [templateHtml, setTemplateHtml] = useState('');
-  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
-  const [templateMsg, setTemplateMsg] = useState('');
-
-  useEffect(() => {
-    const fetchTemplate = async () => {
-      try {
-        const docRef = doc(db, 'config', 'demo_html');
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          setTemplateHtml(snap.data().htmlContent || '');
-        }
-      } catch (err) {
-        console.error("Error fetching HTML template:", err);
-      }
-    };
-    fetchTemplate();
-  }, []);
-
   const handleSaveTemplate = async () => {
     setIsSavingTemplate(true);
     setTemplateMsg('');
@@ -344,24 +348,25 @@ const AdminTab = () => {
     }
   };
 
-  // Filtered Users
+  // Filtered lists
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Filtered Gemini Logs
   const filteredLogs = geminiLogs.filter(l => 
     l.username.toLowerCase().includes(logsSearch.toLowerCase()) ||
     l.action.toLowerCase().includes(logsSearch.toLowerCase()) ||
-    l.inputSnippet.toLowerCase().includes(logsSearch.toLowerCase())
+    l.inputSnippet?.toLowerCase().includes(logsSearch.toLowerCase())
   );
+
+  const pendingUsers = users.filter(u => u.status === 'PENDING' && !u.isAdmin);
 
   if (loadingIp) {
     return (
       <div className="w-full h-[60vh] flex flex-col justify-center items-center gap-3">
-        <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin" />
+        <RefreshCw className="w-8 h-8 text-rose-500 animate-spin" />
         <p className="text-slate-400 font-mono text-sm">Evaluating administrative credentials and IP parameters...</p>
       </div>
     );
@@ -384,7 +389,7 @@ const AdminTab = () => {
         
         <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800 text-xs space-y-2 text-slate-400">
           <p className="font-semibold text-slate-300 flex items-center gap-1.5">
-            <Globe className="w-4 h-4 text-cyan-400" />
+            <Globe className="w-4 h-4 text-rose-400" />
             How to authorize this device:
           </p>
           <ol className="list-decimal pl-5 space-y-1">
@@ -404,7 +409,7 @@ const AdminTab = () => {
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-            <UserCheck className="w-6 h-6 text-cyan-400" />
+            <UserCheck className="w-6 h-6 text-rose-400" />
             Administrative Command Portal
           </h2>
           <p className="text-slate-400 text-sm">Monitor user registration statistics, audit Gemini AI endpoints, and export vault recovery folders.</p>
@@ -412,7 +417,7 @@ const AdminTab = () => {
         <button 
           onClick={fetchAdminData}
           disabled={loadingData}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold border border-slate-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin' : ''}`} />
           Refresh Registry
@@ -420,427 +425,536 @@ const AdminTab = () => {
       </div>
 
       {statusMsg && (
-        <div className="bg-cyan-500/10 border border-cyan-500/20 text-cyan-200 text-sm rounded-xl p-4 animate-fade-in flex items-center gap-2">
-          <CheckCircle className="w-5 h-5 text-cyan-400 shrink-0" />
+        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-200 text-sm rounded-xl p-4 animate-fade-in flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-rose-400 shrink-0" />
           <span>{statusMsg}</span>
         </div>
       )}
 
-      {/* Main Grid: User Directory and Audits */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left 2 Columns: User list & detail */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* User List Panel */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-400" />
-                User Directory ({filteredUsers.length})
-              </h3>
-              
-              {/* Search */}
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input 
-                  type="text"
-                  placeholder="Search name, username..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                />
+      {/* Dynamic View Router for SubTabs */}
+      
+      {/* 1. ADMIN DASHBOARD */}
+      {subTab === 'admin-dashboard' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+              <div className="p-3.5 bg-rose-500/10 text-rose-400 rounded-xl">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-slate-500 text-2xs font-bold uppercase tracking-wider">Total Registers</p>
+                <p className="text-2xl font-extrabold text-white mt-0.5">{users.length}</p>
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-800/80 bg-slate-950/40">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 text-xs font-mono uppercase tracking-wider text-slate-400 bg-slate-900/40">
-                    <th className="p-3 pl-4">Name / Username</th>
-                    <th className="p-3">Email Address</th>
-                    <th className="p-3">Phone</th>
-                    <th className="p-3 text-right pr-4">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/50 text-sm text-slate-300">
-                  {filteredUsers.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" className="p-8 text-center text-slate-500 font-mono text-xs">No registered profiles detected.</td>
-                    </tr>
-                  ) : (
-                    filteredUsers.map(user => (
-                      <tr 
-                        key={user.uid} 
-                        className={`hover:bg-slate-800/30 transition-colors cursor-pointer ${selectedUser?.uid === user.uid ? 'bg-indigo-500/5 border-l-2 border-l-indigo-500' : ''}`}
-                        onClick={() => handleSelectUser(user)}
-                      >
-                        <td className="p-3 pl-4">
-                          <div className="flex items-center gap-2">
-                            <div className="font-semibold text-slate-200">{user.name}</div>
-                            {user.status === 'PENDING' && !user.isAdmin && (
-                              <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Pending</span>
-                            )}
-                            {user.status === 'APPROVED' && (
-                              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Approved</span>
-                            )}
-                          </div>
-                          <div className="text-xs text-slate-500 font-mono">@{user.username}</div>
-                        </td>
-                        <td className="p-3 font-mono text-xs">{user.email}</td>
-                        <td className="p-3 text-slate-400">{user.phone}</td>
-                        <td className="p-3 text-right pr-4">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleSelectUser(user); }}
-                            className="text-xs text-cyan-400 font-bold hover:underline"
-                          >
-                            Inspect Profile
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+              <div className={`p-3.5 rounded-xl ${pendingUsers.length > 0 ? 'bg-red-500/20 text-red-400 animate-pulse' : 'bg-slate-800 text-slate-400'}`}>
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-slate-500 text-2xs font-bold uppercase tracking-wider">Pending Approvals</p>
+                <p className="text-2xl font-extrabold text-white mt-0.5">{pendingUsers.length}</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+              <div className="p-3.5 bg-amber-500/10 text-amber-400 rounded-xl">
+                <Globe className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-slate-500 text-2xs font-bold uppercase tracking-wider">Access Node IPs</p>
+                <p className="text-2xl font-extrabold text-white mt-0.5">{allowedIps.length}</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
+              <div className="p-3.5 bg-indigo-500/10 text-indigo-400 rounded-xl">
+                <Terminal className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-slate-500 text-2xs font-bold uppercase tracking-wider">Gemini API Audit Logs</p>
+                <p className="text-2xl font-extrabold text-white mt-0.5">{geminiLogs.length}</p>
+              </div>
             </div>
           </div>
 
-          {/* User Details Inspector (conditional) */}
-          {selectedUser && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-slide-up">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    Inspector: {selectedUser.name}
-                    {selectedUser.status === 'PENDING' && !selectedUser.isAdmin && (
-                      <span className="bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Pending Approval</span>
-                    )}
-                  </h3>
-                  <p className="text-xs text-slate-400 font-mono mt-0.5">UID: {selectedUser.uid}</p>
-                </div>
-                <div className="flex flex-wrap gap-2 shrink-0">
-                  <button 
-                    onClick={downloadUserBackup}
-                    className="flex items-center gap-1.5 bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-white font-bold py-2 px-3 rounded-xl text-[10px] transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)] cursor-pointer animate-fade-in"
-                  >
-                    <DownloadCloud className="w-3.5 h-3.5" /> Backup JSON
-                  </button>
-                  {isEditingProfile ? (
-                    <>
-                      <button 
-                        onClick={handleSaveProfileEdit}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-xl text-[10px] transition-colors cursor-pointer"
-                      >
-                        Save
-                      </button>
-                      <button 
-                        onClick={() => setIsEditingProfile(false)}
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-350 font-bold py-2 px-3 rounded-xl text-[10px] transition-colors cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button 
-                      onClick={() => {
-                        setEditForm({
-                          name: selectedUser.name || '',
-                          username: selectedUser.username || '',
-                          email: selectedUser.email || '',
-                          phone: selectedUser.phone || ''
-                        });
-                        setIsEditingProfile(true);
-                      }}
-                      className="bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-750 font-bold py-2 px-3 rounded-xl text-[10px] transition-colors cursor-pointer"
-                    >
-                      Edit Profile
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Profile Metadata List / Edit Fields */}
-              {isEditingProfile ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs animate-fade-in">
-                  <div className="space-y-1">
-                    <label className="text-slate-400 font-sans font-semibold">Full Name</label>
-                    <input 
-                      type="text" 
-                      value={editForm.name} 
-                      onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-slate-400 font-sans font-semibold">Username</label>
-                    <input 
-                      type="text" 
-                      value={editForm.username} 
-                      onChange={e => setEditForm({ ...editForm, username: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-slate-400 font-sans font-semibold">Email Address</label>
-                    <input 
-                      type="email" 
-                      value={editForm.email} 
-                      onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-slate-400 font-sans font-semibold">Phone Number</label>
-                    <input 
-                      type="text" 
-                      value={editForm.phone} 
-                      onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                    />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Pending Approvals List */}
+            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <h3 className="text-md font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                <Lock className="w-5 h-5 text-rose-400" />
+                Profile Authorization Queue
+              </h3>
+              
+              {pendingUsers.length === 0 ? (
+                <div className="py-12 flex flex-col justify-center items-center gap-3 text-center bg-slate-950/40 rounded-xl border border-slate-850 border-dashed">
+                  <ShieldCheck className="w-10 h-10 text-emerald-400" />
+                  <div>
+                    <h4 className="text-slate-200 text-sm font-bold">System Status Secure</h4>
+                    <p className="text-slate-500 text-xs mt-1">No pending profiles require administrator clearance.</p>
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono animate-fade-in">
-                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
-                    <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Profile Username</div>
-                    <div className="text-slate-200 font-semibold truncate">@{selectedUser.username}</div>
+                <div className="space-y-3">
+                  {pendingUsers.map(user => (
+                    <div key={user.uid} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-200">{user.name}</span>
+                          <span className="text-[10px] text-slate-500 font-mono">@{user.username}</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">{user.email}</p>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">UID: {user.uid}</p>
+                      </div>
+                      <button
+                        onClick={() => handleApproveUser(user.uid)}
+                        className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.1)] shrink-0"
+                      >
+                        Approve Clearance
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* System Info Integrity */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <h3 className="text-md font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                <Cpu className="w-5 h-5 text-indigo-400" />
+                Security Gateway Parameters
+              </h3>
+              <div className="space-y-4 text-xs font-mono">
+                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                  <span className="text-slate-500 text-2xs uppercase tracking-wider font-sans">Public IP Endpoint</span>
+                  <span className="block text-rose-400 font-bold">{myIp}</span>
+                </div>
+                
+                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                  <span className="text-slate-500 text-2xs uppercase tracking-wider font-sans">Node Authorization Status</span>
+                  <span className="block text-emerald-400 font-bold">WHITELIST ACTIVE</span>
+                </div>
+
+                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                  <span className="text-slate-500 text-2xs uppercase tracking-wider font-sans">Database rules</span>
+                  <span className="block text-slate-400">ENFORCED (Private Firestore Subcollections)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. USER REGISTRY & DETAILS */}
+      {subTab === 'admin-registry' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+          {/* User List Panel (Left 2 Columns) */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-rose-400" />
+                  User Profile Directory ({filteredUsers.length})
+                </h3>
+                
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input 
+                    type="text"
+                    placeholder="Search name, username..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-800/80 bg-slate-950/40">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-xs font-mono uppercase tracking-wider text-slate-400 bg-slate-900/40">
+                      <th className="p-3 pl-4">Name / Username</th>
+                      <th className="p-3">Email Address</th>
+                      <th className="p-3 text-right pr-4">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50 text-sm text-slate-300">
+                    {filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="p-8 text-center text-slate-500 font-mono text-xs">No registered profiles matching terms.</td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map(user => (
+                        <tr 
+                          key={user.uid} 
+                          className={`hover:bg-slate-800/30 transition-colors cursor-pointer ${selectedUser?.uid === user.uid ? 'bg-rose-500/5 border-l-2 border-l-rose-500' : ''}`}
+                          onClick={() => handleSelectUser(user)}
+                        >
+                          <td className="p-3 pl-4">
+                            <div className="flex items-center gap-2">
+                              <div className="font-semibold text-slate-200">{user.name}</div>
+                              {user.status === 'PENDING' && !user.isAdmin && (
+                                <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Pending</span>
+                              )}
+                              {user.status === 'APPROVED' && (
+                                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Approved</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-500 font-mono">@{user.username}</div>
+                          </td>
+                          <td className="p-3 font-mono text-xs">{user.email}</td>
+                          <td className="p-3 text-right pr-4">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleSelectUser(user); }}
+                              className="text-xs text-rose-450 font-bold hover:underline"
+                            >
+                              Inspect
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* User Details Inspector Sidebar (Right 1 Column) */}
+          <div className="space-y-6">
+            {selectedUser ? (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-slide-up">
+                <div className="flex flex-col justify-between gap-4 border-b border-slate-800 pb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      Inspector: {selectedUser.name}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">UID: {selectedUser.uid}</p>
                   </div>
-                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
-                    <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Registered Email</div>
-                    <div className="text-slate-200 font-semibold truncate">{selectedUser.email}</div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={downloadUserBackup}
+                      className="flex items-center gap-1.5 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 text-white font-bold py-2 px-3 rounded-xl text-[10px] transition-all shadow-[0_0_15px_rgba(244,63,94,0.15)] cursor-pointer"
+                    >
+                      <DownloadCloud className="w-3.5 h-3.5" /> Backup JSON
+                    </button>
+                    {isEditingProfile ? (
+                      <>
+                        <button 
+                          onClick={handleSaveProfileEdit}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-xl text-[10px] transition-colors cursor-pointer"
+                        >
+                          Save
+                        </button>
+                        <button 
+                          onClick={() => setIsEditingProfile(false)}
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-350 font-bold py-2 px-3 rounded-xl text-[10px] transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button 
+                        onClick={() => {
+                          setEditForm({
+                            name: selectedUser.name || '',
+                            username: selectedUser.username || '',
+                            email: selectedUser.email || '',
+                            phone: selectedUser.phone || ''
+                          });
+                          setIsEditingProfile(true);
+                        }}
+                        className="bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-750 font-bold py-2 px-3 rounded-xl text-[10px] transition-colors cursor-pointer"
+                      >
+                        Edit Profile
+                      </button>
+                    )}
                   </div>
-                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
-                    <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Contact Number</div>
-                    <div className="text-slate-200 font-semibold">{selectedUser.phone || 'N/A'}</div>
-                  </div>
-                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
-                    <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Created Timestamp</div>
-                    <div className="text-slate-200 font-semibold truncate">
-                      {selectedUser.createdAt?.toDate ? selectedUser.createdAt.toDate().toLocaleString() : 'N/A'}
+                </div>
+
+                {isEditingProfile ? (
+                  <div className="space-y-3 text-xs animate-fade-in">
+                    <div className="space-y-1">
+                      <label className="text-slate-400 font-sans font-semibold">Full Name</label>
+                      <input 
+                        type="text" 
+                        value={editForm.name} 
+                        onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500 text-xs font-sans"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-slate-400 font-sans font-semibold">Username</label>
+                      <input 
+                        type="text" 
+                        value={editForm.username} 
+                        onChange={e => setEditForm({ ...editForm, username: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500 text-xs font-sans"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-slate-400 font-sans font-semibold">Email Address</label>
+                      <input 
+                        type="email" 
+                        value={editForm.email} 
+                        onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500 text-xs font-sans"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-slate-400 font-sans font-semibold">Phone Number</label>
+                      <input 
+                        type="text" 
+                        value={editForm.phone} 
+                        onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500 text-xs font-sans"
+                      />
                     </div>
                   </div>
-                </div>
-              )}
-
-              {/* Approval Action Card */}
-              {selectedUser.status === 'PENDING' && !selectedUser.isAdmin && (
-                <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in">
-                  <div>
-                    <h4 className="text-sm font-bold text-rose-300">Account Authorization Required</h4>
-                    <p className="text-xs text-slate-400 mt-1">This user is currently blocked from accessing DueVault AI. Approve them below to grant entry.</p>
+                ) : (
+                  <div className="space-y-3 text-xs font-mono animate-fade-in">
+                    <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                      <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Profile Username</div>
+                      <div className="text-slate-200 font-semibold">@{selectedUser.username}</div>
+                    </div>
+                    <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                      <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Registered Email</div>
+                      <div className="text-slate-200 font-semibold truncate">{selectedUser.email}</div>
+                    </div>
+                    <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3 space-y-1">
+                      <div className="text-slate-500 font-sans text-2xs uppercase tracking-wider">Contact Number</div>
+                      <div className="text-slate-200 font-semibold">{selectedUser.phone || 'N/A'}</div>
+                    </div>
                   </div>
+                )}
+
+                {/* Subcollection counts */}
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-2 text-center">
+                    <div className="text-lg font-bold text-rose-450">{selectedUserData.tasks.length}</div>
+                    <div className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Tasks</div>
+                  </div>
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-2 text-center">
+                    <div className="text-lg font-bold text-amber-500">{selectedUserData.routines.length}</div>
+                    <div className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Routines</div>
+                  </div>
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-2 text-center">
+                    <div className="text-lg font-bold text-indigo-400">
+                      {selectedUserData.finances?.transactions?.length || 0}
+                    </div>
+                    <div className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Trans</div>
+                  </div>
+                </div>
+
+                {/* History Logs */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <History className="w-3.5 h-3.5 text-slate-400" />
+                    Modification Audit Logs
+                  </h4>
+                  <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950/40 divide-y divide-slate-850">
+                    {selectedUserData.history.length === 0 ? (
+                      <div className="p-4 text-center text-[10px] font-mono text-slate-500">No events logged.</div>
+                    ) : (
+                      selectedUserData.history.map(log => (
+                        <div key={log.id} className="p-2.5 text-[10px] flex justify-between items-start gap-3">
+                          <div>
+                            <span className={`px-1 rounded font-mono uppercase text-[8px] font-bold ${
+                              log.action === 'create' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
+                            }`}>{log.action}</span>
+                            <p className="text-slate-300 font-sans mt-0.5 truncate max-w-[110px]">
+                              {log.action === 'delete' ? log.dataBefore?.title : log.dataAfter?.title}
+                            </p>
+                          </div>
+                          <span className="text-slate-600 shrink-0 font-mono text-[8px] mt-0.5">
+                            {log.timestamp?.toDate ? log.timestamp.toDate().toLocaleDateString() : 'Just now'}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Danger zone inside Inspector */}
+                <div className="border border-red-500/25 bg-red-500/5 rounded-xl p-3.5 space-y-2.5">
+                  <p className="text-[10px] text-slate-500 leading-snug">Wipe all tasks, routines, budgets, logs, and profile records from Cloud Firestore.</p>
                   <button
-                    onClick={() => handleApproveUser(selectedUser.uid)}
-                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer shrink-0"
+                    onClick={() => handleDeleteUserData(selectedUser.uid, selectedUser.name)}
+                    className="w-full bg-red-600 hover:bg-red-500 text-white font-extrabold text-[10px] py-2 rounded-xl transition-all cursor-pointer"
                   >
-                    Approve Access
+                    Purge All User Data
                   </button>
                 </div>
-              )}
-
-              {/* Data Summary counts */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-2.5 text-center">
-                  <div className="text-xl font-bold text-cyan-400">{selectedUserData.tasks.length}</div>
-                  <div className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Tasks</div>
-                </div>
-                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-2.5 text-center">
-                  <div className="text-xl font-bold text-indigo-400">{selectedUserData.routines.length}</div>
-                  <div className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Routines</div>
-                </div>
-                <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-2.5 text-center">
-                  <div className="text-xl font-bold text-emerald-400">
-                    {selectedUserData.finances?.transactions?.length || 0}
-                  </div>
-                  <div className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Trans.</div>
-                </div>
               </div>
-
-              {/* Modification History Logs */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold text-slate-200 flex items-center gap-1.5">
-                  <History className="w-4 h-4 text-slate-400" />
-                  Historical Modification History (Last 50 entries)
-                </h4>
-                
-                <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-800/80 bg-slate-950/40 divide-y divide-slate-800/40">
-                  {selectedUserData.history.length === 0 ? (
-                    <div className="p-6 text-center text-xs font-mono text-slate-500">No modifications logged yet (pure sync state).</div>
-                  ) : (
-                    selectedUserData.history.map(log => (
-                      <div key={log.id} className="p-3 text-xs flex justify-between items-start gap-4 hover:bg-slate-900/30 transition-colors">
-                        <div>
-                          <div className="font-semibold flex items-center gap-2">
-                            <span className={`px-1.5 py-0.5 rounded font-mono uppercase tracking-wider text-[9px] font-bold ${
-                              log.action === 'create' ? 'bg-emerald-500/10 text-emerald-400' :
-                              log.action === 'update' ? 'bg-amber-500/10 text-amber-400' : 'bg-rose-500/10 text-rose-400'
-                            }`}>
-                              {log.action}
-                            </span>
-                            <span className="text-slate-300 font-mono capitalize">{log.entity} item</span>
-                          </div>
-                          <div className="text-slate-400 mt-1">
-                            {log.action === 'delete' ? (
-                              <span className="font-semibold text-slate-300">"{log.dataBefore?.title}"</span>
-                            ) : (
-                              <span className="font-semibold text-slate-300">"{log.dataAfter?.title}"</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right text-slate-500 font-mono text-[10px] shrink-0 mt-0.5">
-                          {log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : 'Just now'}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+            ) : (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-500 italic text-xs py-16">
+                <UserX className="w-8 h-8 text-slate-600 mx-auto mb-2 animate-bounce" />
+                Select a user profile from the directory registry to inspect configuration logs and data backups.
               </div>
-
-              {/* Danger Zone */}
-              <div className="border border-red-500/20 bg-red-500/5 rounded-xl p-4 space-y-3">
-                <div>
-                  <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider">Danger Zone</h4>
-                  <p className="text-[10px] text-slate-500 mt-0.5 leading-normal">Wipe all tasks, routines, budgets, logs, and profile records from Cloud Firestore. This cannot be undone.</p>
-                </div>
-                <button
-                  onClick={() => handleDeleteUserData(selectedUser.uid, selectedUser.name)}
-                  className="bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-[0_0_10px_rgba(239,68,68,0.1)] shrink-0"
-                >
-                  Purge All User Data
-                </button>
-              </div>
-
-            </div>
-          )}
-
-          {!selectedUser && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 animate-slide-up">
-              <div className="border-b border-slate-800 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                  <h3 className="font-bold text-white text-sm uppercase tracking-wider flex items-center gap-2">
-                    Configure Demo Timetable HTML
-                  </h3>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Define the reference template downloaded by users in the Settings tab.</p>
-                </div>
-                <button
-                  onClick={handleSaveTemplate}
-                  disabled={isSavingTemplate}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-[0_0_15px_rgba(79,70,229,0.2)] disabled:opacity-50 shrink-0"
-                >
-                  {isSavingTemplate ? "Saving..." : "Save Template"}
-                </button>
-              </div>
-              {templateMsg && (
-                <p className="text-xs text-emerald-400 font-bold animate-pulse">{templateMsg}</p>
-              )}
-              <textarea
-                value={templateHtml}
-                onChange={(e) => setTemplateHtml(e.target.value)}
-                placeholder="Paste weekly HTML schedule markup template here..."
-                rows="12"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-300 focus:outline-none focus:border-indigo-500 leading-relaxed"
-              />
-            </div>
-          )}
-
+            )}
+          </div>
         </div>
+      )}
 
-        {/* Right 1 Column: Gemini logs and IP settings */}
-        <div className="space-y-6">
-          
-          {/* IP Whitelist Manager */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-            <h3 className="text-md font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-              <Globe className="w-5 h-5 text-cyan-400" />
-              IP Whitelist Authorization
-            </h3>
+      {/* 3. GEMINI NLP LOGS AUDIT */}
+      {subTab === 'admin-logs' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 animate-fade-in">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-rose-400" />
+                Gemini NLP Usage Logs Directory ({filteredLogs.length})
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">Audit natural language request scopes and structured schema parsing responses.</p>
+            </div>
             
-            <div className="text-xs text-slate-400 space-y-2">
-              <p>Your Current Public IP:</p>
-              <code className="block bg-slate-950/80 px-3 py-2 rounded-xl border border-slate-800 text-cyan-400 font-mono font-bold text-sm text-center">{myIp}</code>
-            </div>
-
-            {/* Whitelisted IP list */}
-            <div className="space-y-2 pt-2">
-              <p className="text-xs font-semibold text-slate-400">Whitelisted IPs:</p>
-              <div className="max-h-36 overflow-y-auto space-y-1.5">
-                {allowedIps.map(ip => (
-                  <div key={ip} className="flex justify-between items-center bg-slate-950/50 rounded-lg p-2 border border-slate-800 text-xs">
-                    <span className="font-mono text-slate-300">{ip}</span>
-                    <button 
-                      onClick={() => handleRemoveIp(ip)}
-                      className="text-rose-400 hover:text-rose-300 font-bold hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Add IP */}
-            <div className="flex gap-2 pt-2">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input 
                 type="text"
-                placeholder="Add IP (e.g. 192.168.1.1)"
+                placeholder="Search audit parameters..."
+                value={logsSearch}
+                onChange={(e) => setLogsSearch(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto pr-1">
+            {filteredLogs.length === 0 ? (
+              <div className="col-span-2 text-center py-16 text-xs font-mono text-slate-500 italic">No matching Gemini audit logs found.</div>
+            ) : (
+              filteredLogs.map(log => (
+                <div key={log.id} className="bg-slate-950/40 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between gap-3 text-xs leading-normal">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center border-b border-slate-850 pb-2">
+                      <span className="font-bold text-slate-200">@{log.username}</span>
+                      <span className="text-[9px] font-mono bg-rose-500/10 text-rose-400 border border-rose-500/25 px-2 py-0.5 rounded uppercase font-bold">
+                        {log.action === 'task_nlp_parse' ? 'NLP Parse' : 'HTML Scraping'}
+                      </span>
+                    </div>
+
+                    {log.inputSnippet && (
+                      <div className="space-y-1">
+                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-mono font-bold">Input Payload:</span>
+                        <p className="bg-slate-900 border border-slate-850 rounded-lg p-2.5 font-mono text-[10px] text-slate-400 break-words leading-relaxed">
+                          {log.inputSnippet}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center text-[9px] text-slate-500 font-mono mt-2 pt-2 border-t border-slate-850">
+                    <span>ID: {log.id.slice(0, 10)}...</span>
+                    <span>{log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : 'Just now'}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 4. IP WHITELIST */}
+      {subTab === 'admin-security' && (
+        <div className="max-w-3xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-fade-in">
+          <div>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+              <Globe className="w-5 h-5 text-rose-400" />
+              IP Whitelist Access Management
+            </h3>
+            <p className="text-slate-400 text-xs mt-1">Configure whitelists of public IP addresses authorized to fetch registered profiles database collections.</p>
+          </div>
+
+          <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <span className="text-slate-500 text-2xs uppercase tracking-wider font-mono">Your Current Node Endpoint</span>
+              <code className="block text-rose-400 font-mono font-bold text-lg mt-0.5">{myIp}</code>
+            </div>
+            <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider">Connection Verified</span>
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-xs font-semibold text-slate-400">Add New Approved Endpoint Node</label>
+            <div className="flex gap-2">
+              <input 
+                type="text"
+                placeholder="Enter IP (e.g. 192.168.1.55)"
                 value={newIpInput}
                 onChange={(e) => setNewIpInput(e.target.value)}
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
               />
               <button 
                 onClick={handleAddIp}
-                className="bg-cyan-500/20 hover:bg-cyan-500 text-cyan-400 hover:text-white border border-cyan-500/30 rounded-xl px-3 text-xs font-bold transition-all"
+                className="bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold rounded-xl px-4 text-xs transition-all shadow-[0_0_10px_rgba(244,63,94,0.15)] cursor-pointer"
               >
-                Add
+                Add Node
               </button>
             </div>
           </div>
 
-          {/* Gemini Usage Logs */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-            <div className="flex flex-col gap-2 border-b border-slate-800 pb-3">
-              <h3 className="text-md font-bold text-white flex items-center gap-2">
-                <Terminal className="w-5 h-5 text-indigo-400" />
-                Gemini NLP Usage Logs
-              </h3>
-              <input 
-                type="text"
-                placeholder="Filter logs..."
-                value={logsSearch}
-                onChange={(e) => setLogsSearch(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-[11px] text-white placeholder-slate-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="max-h-96 overflow-y-auto space-y-2 pr-1.5 divide-y divide-slate-800/50">
-              {filteredLogs.length === 0 ? (
-                <div className="text-center py-8 text-xs font-mono text-slate-500">No Gemini audit events logged.</div>
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Authorized Whitelist (Allowed Nodes)</h4>
+            <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/30 divide-y divide-slate-800">
+              {allowedIps.length === 0 ? (
+                <div className="p-4 text-center text-xs italic text-slate-500">No active IPs whitelisted. Open access enabled (development mode).</div>
               ) : (
-                filteredLogs.map(log => (
-                  <div key={log.id} className="pt-2.5 text-xs space-y-1.5">
-                    <div className="flex justify-between items-start">
-                      <span className="font-semibold text-slate-200">@{log.username}</span>
-                      <span className="text-[9px] font-mono bg-slate-800 text-indigo-400 px-1.5 py-0.5 rounded uppercase font-bold shrink-0">{log.action === 'task_nlp_parse' ? 'NLP Parse' : 'HTML Parse'}</span>
+                allowedIps.map(ip => (
+                  <div key={ip} className="flex justify-between items-center p-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+                      <span className="font-mono text-slate-200">{ip}</span>
+                      {ip === myIp && <span className="text-[10px] text-slate-500 font-sans italic">(Self)</span>}
                     </div>
-                    
-                    {log.inputSnippet && (
-                      <p className="bg-slate-950/60 border border-slate-800 rounded-lg p-2 font-mono text-[10px] text-slate-400 break-words leading-relaxed">
-                        {log.inputSnippet}
-                      </p>
-                    )}
-
-                    <div className="text-[10px] text-slate-500 font-mono text-right">
-                      {log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : 'Just now'}
-                    </div>
+                    <button 
+                      onClick={() => handleRemoveIp(ip)}
+                      className="text-red-400 hover:text-red-300 font-bold hover:underline"
+                    >
+                      Remove Node
+                    </button>
                   </div>
                 ))
               )}
             </div>
           </div>
-
         </div>
+      )}
 
-      </div>
+      {/* 5. REFERENCE HTML CONFIG */}
+      {subTab === 'admin-html' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 animate-fade-in">
+          <div className="border-b border-slate-800 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <h3 className="font-bold text-white text-md uppercase tracking-wider flex items-center gap-2">
+                <FileCode2 className="w-5 h-5 text-rose-400" />
+                Configure Reference Timetable HTML
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">Define the markup template loaded when users request standard university calendar samples.</p>
+            </div>
+            <button
+              onClick={handleSaveTemplate}
+              disabled={isSavingTemplate}
+              className="bg-rose-500 hover:bg-rose-400 text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-[0_0_15px_rgba(244,63,94,0.15)] disabled:opacity-50 shrink-0 animate-pulse"
+            >
+              {isSavingTemplate ? "Saving..." : "Save Template Settings"}
+            </button>
+          </div>
+          
+          {templateMsg && (
+            <p className="text-xs text-emerald-400 font-bold animate-pulse">{templateMsg}</p>
+          )}
+          
+          <textarea
+            value={templateHtml}
+            onChange={(e) => setTemplateHtml(e.target.value)}
+            placeholder="Paste raw timetable HTML schedule template code here..."
+            rows="16"
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-300 focus:outline-none focus:border-rose-500 leading-relaxed"
+          />
+        </div>
+      )}
 
     </div>
   );

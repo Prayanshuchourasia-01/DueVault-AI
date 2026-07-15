@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Trash2, Edit2, CheckCircle2, Circle, CalendarDays, CalendarClock, Plus } from 'lucide-react';
+import { Search, Trash2, Edit2, CheckCircle2, Circle, CalendarDays, CalendarClock, Plus } from 'lucide-react';
 import { InputEngine } from '../InputEngine';
 import { TaskAddModal } from '../TaskAddModal';
 

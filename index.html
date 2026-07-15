@@ -6,9 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DueVault AI // Focus HUD & Proactive Coordinator</title>
     <meta name="description" content="Privacy-first, proactive deadline coordinator and Focus HUD built for engineering students. Auto-schedule tasks using natural language powered by Gemini AI." />
+    
+    <!-- PWA & Mobile App Settings -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DueVault" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registered successfully:', reg.scope))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>

@@ -13,7 +13,11 @@ import {
   LogOut, 
   User,
   Menu,
-  X
+  X,
+  ShieldAlert,
+  Terminal,
+  Globe,
+  LayoutGrid
 } from 'lucide-react';
 
 const Navigation = ({ 
@@ -23,11 +27,14 @@ const Navigation = ({
   setTheme, 
   currentUser, 
   isAdmin, 
+  adminMode,
+  setAdminMode,
   onSignOut 
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const mainNavItems = [
+  // User Space Sidebar Items
+  const userNavItems = [
     { id: 'focus', icon: Home, label: 'Focus HUD' },
     { id: 'dashboard', icon: CalendarDays, label: 'Dashboard' },
     { id: 'timetable', icon: CalendarClock, label: 'Timetable' },
@@ -35,42 +42,86 @@ const Navigation = ({
     { id: 'finances', icon: Wallet, label: 'Finances' }
   ];
 
-  // Desktop links list
-  const desktopNavItems = [
-    ...mainNavItems,
-    { id: 'settings', icon: Settings, label: 'Settings' }
+  // Admin Space Sidebar Items
+  const adminNavItems = [
+    { id: 'admin-dashboard', icon: ShieldCheck, label: 'Admin HUD' },
+    { id: 'admin-registry', icon: UsersIcon, label: 'User Directory' },
+    { id: 'admin-logs', icon: Terminal, label: 'NLP Audit Logs' },
+    { id: 'admin-security', icon: Globe, label: 'IP Whitelist' },
+    { id: 'admin-html', icon: Settings, label: 'HTML Config' }
   ];
-  if (isAdmin) {
-    desktopNavItems.push({ id: 'admin', icon: ShieldCheck, label: 'Admin Portal' });
+
+  // Map Lucide icons correctly
+  function UsersIcon(props) {
+    return <User {...props} />;
   }
+
+  // Active items listing helper
+  const mainNavItems = adminMode ? adminNavItems : userNavItems;
+  const desktopNavItems = adminMode 
+    ? adminNavItems 
+    : [
+        ...userNavItems,
+        { id: 'settings', icon: Settings, label: 'Settings' }
+      ];
 
   return (
     <>
       {/* Desktop Sidebar navigation & Mobile bottom bar */}
-      <nav className="w-full md:w-64 bg-slate-900 border-t md:border-t-0 md:border-r border-slate-800 flex md:flex-col justify-around md:justify-start items-center md:items-start p-2 md:p-4 z-40 fixed bottom-0 md:static md:h-screen">
+      <nav className={`w-full md:w-64 border-t md:border-t-0 md:border-r flex md:flex-col justify-around md:justify-start items-center md:items-start p-2 md:p-4 z-40 fixed bottom-0 md:static md:h-screen transition-all duration-350 ${
+        adminMode 
+          ? 'bg-slate-950 border-rose-900/30' 
+          : 'bg-slate-900 border-slate-800'
+      }`}>
         
         {/* Brand / Logo (Hidden on mobile) */}
         <div className="hidden md:flex items-center gap-3 w-full p-2 mb-6 border-b border-slate-800 pb-4">
-          <div className="bg-cyan-500/20 p-2 rounded-xl">
-            <Orbit className="w-6 h-6 text-cyan-400 animate-spin-slow" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent">
-              DueVault AI
-            </h1>
-            <p className="text-xs text-slate-500 tracking-widest font-mono">PRO EDITION</p>
-          </div>
+          {adminMode ? (
+            <>
+              <div className="bg-rose-500/20 p-2 rounded-xl border border-rose-500/30">
+                <ShieldAlert className="w-6 h-6 text-rose-400 animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-lg font-bold bg-gradient-to-r from-rose-400 to-amber-400 bg-clip-text text-transparent truncate">
+                  DueVault Admin
+                </h1>
+                <p className="text-[9px] text-rose-500 tracking-widest font-mono font-bold">SECURE PORTAL</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="bg-cyan-500/20 p-2 rounded-xl">
+                <Orbit className="w-6 h-6 text-cyan-400 animate-spin-slow" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent truncate">
+                  DueVault AI
+                </h1>
+                <p className="text-xs text-slate-500 tracking-widest font-mono">PRO EDITION</p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* User profile widget (Hidden on mobile) */}
         {currentUser && (
-          <div className="hidden md:flex items-center gap-2.5 w-full p-2 mb-4 bg-slate-950/40 border border-slate-800/80 rounded-xl">
-            <div className="bg-indigo-500/10 p-1.5 rounded-lg text-indigo-400 border border-indigo-500/20">
-              <User className="w-4 h-4" />
+          <div className={`hidden md:flex items-center gap-2.5 w-full p-2 mb-4 border rounded-xl ${
+            adminMode 
+              ? 'bg-rose-950/20 border-rose-900/30' 
+              : 'bg-slate-950/40 border-slate-800/80'
+          }`}>
+            <div className={`p-1.5 rounded-lg border ${
+              adminMode 
+                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' 
+                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+            }`}>
+              {adminMode ? <ShieldCheck className="w-4 h-4" /> : <User className="w-4 h-4" />}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-slate-200 truncate">{currentUser.displayName || currentUser.email}</p>
-              <p className="text-[10px] text-slate-500 font-mono truncate">{isAdmin ? 'ADMIN ACCESS' : 'SYNC ENABLED'}</p>
+              <p className={`text-[10px] font-mono tracking-wider font-bold uppercase ${
+                adminMode ? 'text-rose-400' : 'text-slate-500'
+              }`}>{adminMode ? 'SYSTEM ADMIN' : 'SYNC ENABLED'}</p>
             </div>
           </div>
         )}
@@ -84,10 +135,12 @@ const Navigation = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 w-full cursor-pointer ${
+                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 w-full cursor-pointer border ${
                   isActive 
-                    ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30' 
-                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                    ? (adminMode 
+                        ? 'bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
+                        : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.15)]')
+                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 border-transparent'
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]' : ''}`} />
@@ -95,6 +148,29 @@ const Navigation = ({
               </button>
             );
           })}
+
+          {/* Switch mode links */}
+          {isAdmin && (
+            <div className="pt-2 border-t border-slate-850 mt-2 space-y-2">
+              {adminMode ? (
+                <button
+                  onClick={() => { setAdminMode(false); setActiveTab('focus'); }}
+                  className="flex items-center gap-3 p-3 rounded-xl transition-all duration-300 w-full cursor-pointer text-amber-400 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20"
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                  <span className="text-sm font-medium">User Workspace</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setAdminMode(true); setActiveTab('admin-dashboard'); }}
+                  className="flex items-center gap-3 p-3 rounded-xl transition-all duration-300 w-full cursor-pointer text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  <span className="text-sm font-medium">Admin Console</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Desktop Bottom Actions (Sign Out & Theme) */}
@@ -132,11 +208,15 @@ const Navigation = ({
                 key={item.id}
                 onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
                 className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 cursor-pointer ${
-                  isActive ? 'text-indigo-400' : 'text-slate-500'
+                  isActive 
+                    ? (adminMode ? 'text-rose-400' : 'text-indigo-400') 
+                    : 'text-slate-500'
                 }`}
               >
                 <Icon className="w-5.5 h-5.5" />
-                <span className="text-[9px] font-bold mt-1 tracking-tight truncate max-w-[55px]">{item.label.split(' ')[0]}</span>
+                <span className="text-[9px] font-bold mt-1 tracking-tight truncate max-w-[55px]">
+                  {item.label.split(' ')[0]}
+                </span>
               </button>
             );
           })}
@@ -145,7 +225,7 @@ const Navigation = ({
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 cursor-pointer ${
-              isMobileMenuOpen ? 'text-indigo-400' : 'text-slate-500'
+              isMobileMenuOpen ? (adminMode ? 'text-rose-400' : 'text-indigo-400') : 'text-slate-500'
             }`}
           >
             {isMobileMenuOpen ? <X className="w-5.5 h-5.5 text-rose-400" /> : <Menu className="w-5.5 h-5.5" />}
@@ -171,43 +251,61 @@ const Navigation = ({
 
           {/* User profile details */}
           {currentUser && (
-            <div className="flex items-center gap-3 p-3 bg-slate-900/60 border border-slate-800/80 rounded-2xl">
-              <div className="bg-indigo-500/10 p-2 rounded-xl text-indigo-400 border border-indigo-500/20 shrink-0">
-                <User className="w-5 h-5" />
+            <div className={`flex items-center gap-3 p-3 border rounded-2xl ${
+              adminMode ? 'bg-rose-950/20 border-rose-900/30' : 'bg-slate-900/60 border-slate-800/80'
+            }`}>
+              <div className={`p-2 rounded-xl border shrink-0 ${
+                adminMode 
+                  ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' 
+                  : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+              }`}>
+                {adminMode ? <ShieldCheck className="w-5 h-5" /> : <User className="w-5 h-5" />}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-slate-200 truncate">{currentUser.displayName || currentUser.email}</p>
-                <p className="text-[9px] text-slate-500 font-mono tracking-wider truncate uppercase">{isAdmin ? 'ADMIN PRIVILEGES' : 'SYNC CHANNEL ACTIVE'}</p>
+                <p className={`text-[9px] font-mono tracking-wider truncate uppercase font-bold ${
+                  adminMode ? 'text-rose-400' : 'text-slate-500'
+                }`}>{adminMode ? 'ADMIN PRIVILEGES' : 'SYNC CHANNEL ACTIVE'}</p>
               </div>
             </div>
           )}
 
-          {/* Settings option */}
-          <button
-            onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
-            className={`flex items-center gap-3.5 p-3 rounded-xl transition-all w-full cursor-pointer border ${
-              activeTab === 'settings' 
-                ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/25' 
-                : 'text-slate-300 hover:bg-slate-800/50 border-transparent'
-            }`}
-          >
-            <Settings className="w-5 h-5 text-slate-400" />
-            <span className="text-sm font-bold">Settings Panel</span>
-          </button>
-
-          {/* Admin Tab option */}
-          {isAdmin && (
+          {/* Settings option (only for standard mode or fallback) */}
+          {!adminMode && (
             <button
-              onClick={() => { setActiveTab('admin'); setIsMobileMenuOpen(false); }}
+              onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
               className={`flex items-center gap-3.5 p-3 rounded-xl transition-all w-full cursor-pointer border ${
-                activeTab === 'admin' 
+                activeTab === 'settings' 
                   ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/25' 
                   : 'text-slate-300 hover:bg-slate-800/50 border-transparent'
               }`}
             >
-              <ShieldCheck className="w-5 h-5 text-cyan-400" />
-              <span className="text-sm font-bold">Admin Portal</span>
+              <Settings className="w-5 h-5 text-slate-400" />
+              <span className="text-sm font-bold">Settings Panel</span>
             </button>
+          )}
+
+          {/* Switch mode links on mobile */}
+          {isAdmin && (
+            <div className="pt-1.5 border-t border-slate-850/80 mt-1 flex flex-col gap-2">
+              {adminMode ? (
+                <button
+                  onClick={() => { setAdminMode(false); setActiveTab('focus'); setIsMobileMenuOpen(false); }}
+                  className="flex items-center gap-3.5 p-3 rounded-xl transition-all w-full cursor-pointer text-amber-400 bg-amber-500/10 border border-amber-500/20"
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                  <span className="text-sm font-bold">User Workspace Mode</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setAdminMode(true); setActiveTab('admin-dashboard'); setIsMobileMenuOpen(false); }}
+                  className="flex items-center gap-3.5 p-3 rounded-xl transition-all w-full cursor-pointer text-rose-400 bg-rose-500/10 border border-rose-500/20"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  <span className="text-sm font-bold">Admin Console Mode</span>
+                </button>
+              )}
+            </div>
           )}
 
           {/* Light/Dark mode option */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { isTaskActive, isTaskUpcoming, isTaskOver, combineDateAndTime } from '../utils/timeUtils';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
@@ -198,7 +198,7 @@ export const useSchedule = () => {
     }
   };
 
-  const recalculateSchedule = () => {
+  const recalculateSchedule = useCallback(() => {
     const today = new Date();
     const todayDayName = today.toLocaleDateString('en-US', { weekday: 'long' });
     const todayDateStr = today.toLocaleDateString('en-CA');
@@ -273,13 +273,13 @@ export const useSchedule = () => {
     upcoming.sort((a, b) => new Date(a.start) - new Date(b.start));
     setActiveTask(active);
     setNextTask(upcoming.length > 0 ? upcoming[0] : null);
-  };
+  }, [routines, timetableConfig]);
 
   useEffect(() => {
     recalculateSchedule();
     const interval = setInterval(recalculateSchedule, 3000);
     return () => clearInterval(interval);
-  }, [tasks, routines, timetableConfig]);
+  }, [recalculateSchedule]);
 
   const addTask = async (parsedTask) => {
     const startISO = combineDateAndTime(parsedTask.date, parsedTask.start);
@@ -526,7 +526,7 @@ export const useSchedule = () => {
     const newRoutines = [];
     targetDays.forEach(day => {
       routinesToCopy.forEach(rt => {
-        const { id, exceptions, dayOfWeek, ...rest } = rt;
+        const { id: _id, exceptions: _exceptions, dayOfWeek: _dayOfWeek, ...rest } = rt;
         newRoutines.push({
           ...rest,
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -558,7 +558,7 @@ export const useSchedule = () => {
     
     targetDays.forEach(day => {
       sourceRoutines.forEach(rt => {
-        const { id, exceptions, dayOfWeek, ...rest } = rt;
+        const { id: _id, exceptions: _exceptions, dayOfWeek: _dayOfWeek, ...rest } = rt;
         newRoutines.push({
           ...rest,
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),

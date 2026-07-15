@@ -27,6 +27,8 @@ const useDragScroll = () => {
   return { ref, onMouseDown, onMouseLeave, onMouseUp, onMouseMove, style: { cursor: isDragging ? 'grabbing' : 'grab' } };
 };
 
+const DEEP_WORK_CATEGORIES = ['coding', 'logic', 'study', 'class', 'lab', 'hackathon', 'development', 'engineering'];
+
 const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
   const today = new Date();
   const todayStr = today.toLocaleDateString('en-CA');
@@ -98,8 +100,6 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
     return fullUpcomingWeek;
   }, [fullUpcomingWeek, timeFilter, todayStr, tomorrowStr]);
 
-  const deepWorkCategories = ['coding', 'logic', 'study', 'class', 'lab', 'hackathon', 'development', 'engineering'];
-  
   // Analytics Calculations (always calculated on full week for consistency, or just today)
   const analytics = useMemo(() => {
     let deepWorkMs = 0;
@@ -117,7 +117,7 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
         const duration = new Date(t.end) - new Date(t.start);
         if (duration > 0) {
           const cat = (t.category || '').toLowerCase();
-          if (deepWorkCategories.some(dw => cat.includes(dw))) {
+          if (DEEP_WORK_CATEGORIES.some(dw => cat.includes(dw))) {
             deepWorkMs += duration;
           } else {
             adminMs += duration;
@@ -254,7 +254,7 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
     });
 
     return elements;
-  }, [upcomingWeek, todayStr, onToggleComplete]);
+  }, [upcomingWeek, todayStr, onToggleComplete, timeFilter]);
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-24 md:pb-6 font-sans">

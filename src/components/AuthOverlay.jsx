@@ -7,16 +7,11 @@ import {
 import { 
   doc, 
   setDoc, 
-  getDoc, 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
   serverTimestamp,
   writeBatch
 } from 'firebase/firestore';
 import { auth, db } from '../utils/firebase';
-import { Orbit, Mail, Lock, User, Phone, CheckCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Orbit, Mail, Lock, User, Phone, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 const AuthOverlay = ({ onAuthSuccess }) => {
   const [isRegistering, setIsRegistering] = useState(false);
