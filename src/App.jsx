@@ -211,7 +211,7 @@ function App() {
     }
   }, [activeTask, dismissedAlarmTaskId, startAlarm, stopAlarm]);
 
-  // Robust Block Starting Notification Scheduler (exact minute matching)
+  // Robust Block Starting & Ending Notification Scheduler (exact minute matching)
   const notifiedTasksRef = React.useRef(new Set());
   useEffect(() => {
     const interval = setInterval(() => {
@@ -219,25 +219,63 @@ function App() {
       const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
       const todayStr = now.toLocaleDateString('en-CA');
       
-      // Check routine tasks starting now
+      // Check routine tasks starting/ending now
       todaysRoutines.forEach(rt => {
-        if (!rt.start) return;
-        const rtTimeStr = new Date(rt.start).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        const key = `rt-${rt.id}-${todayStr}-${rtTimeStr}`;
-        if (rtTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
-          sendNotification("Block Starting", `${rt.title} is starting now at ${timeStr}.`);
-          notifiedTasksRef.current.add(key);
+        // Start check
+        if (rt.start) {
+          const startDate = new Date(rt.start);
+          if (!isNaN(startDate.getTime())) {
+            const rtTimeStr = startDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const key = `rt-${rt.id}-${todayStr}-${rtTimeStr}`;
+            if (rtTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
+              sendNotification("Block Starting", `${rt.title} is starting now at ${timeStr}.`);
+              notifiedTasksRef.current.add(key);
+            }
+          }
+        }
+
+        // End check
+        if (rt.end) {
+          const endDate = new Date(rt.end);
+          if (!isNaN(endDate.getTime())) {
+            const rtEndTimeStr = endDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const keyEnd = `rt-end-${rt.id}-${todayStr}-${rtEndTimeStr}`;
+            if (rtEndTimeStr === timeStr && !notifiedTasksRef.current.has(keyEnd)) {
+              sendNotification("Block Ended", `${rt.title} has ended at ${timeStr}.`);
+              notifiedTasksRef.current.add(keyEnd);
+            }
+          }
         }
       });
 
-      // Check custom tasks starting now
+      // Check custom tasks starting/ending now
       tasks.forEach(task => {
-        if (task.date !== todayStr || !task.start) return;
-        const taskTimeStr = new Date(task.start).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        const key = `task-${task.id}-${todayStr}-${taskTimeStr}`;
-        if (taskTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
-          sendNotification("Block Starting", `${task.title} is starting now at ${timeStr}.`);
-          notifiedTasksRef.current.add(key);
+        if (task.date !== todayStr) return;
+
+        // Start check
+        if (task.start) {
+          const startDate = new Date(task.start);
+          if (!isNaN(startDate.getTime())) {
+            const taskTimeStr = startDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const key = `task-${task.id}-${todayStr}-${taskTimeStr}`;
+            if (taskTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
+              sendNotification("Block Starting", `${task.title} is starting now at ${timeStr}.`);
+              notifiedTasksRef.current.add(key);
+            }
+          }
+        }
+
+        // End check
+        if (task.end) {
+          const endDate = new Date(task.end);
+          if (!isNaN(endDate.getTime())) {
+            const taskEndTimeStr = endDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const keyEnd = `task-end-${task.id}-${todayStr}-${taskEndTimeStr}`;
+            if (taskEndTimeStr === timeStr && !notifiedTasksRef.current.has(keyEnd)) {
+              sendNotification("Block Ended", `${task.title} has ended at ${timeStr}.`);
+              notifiedTasksRef.current.add(keyEnd);
+            }
+          }
         }
       });
     }, 10000); // Check every 10 seconds

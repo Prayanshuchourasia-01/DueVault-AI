@@ -25,7 +25,7 @@ export const useNotifications = () => {
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
         // Use service worker notification first (reliable on mobile and background)
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        if (navigator.serviceWorker) {
           navigator.serviceWorker.ready.then((registration) => {
             registration.showNotification(title, {
               body,
@@ -36,7 +36,11 @@ export const useNotifications = () => {
             });
           }).catch((err) => {
             console.warn('Service worker not ready, falling back to window Notification:', err);
-            new Notification(title, { body, icon: '/favicon.svg' });
+            try {
+              new Notification(title, { body, icon: '/favicon.svg' });
+            } catch (fallbackErr) {
+              console.error('Failed to construct window Notification fallback:', fallbackErr);
+            }
           });
         } else {
           new Notification(title, { body, icon: '/favicon.svg' });
