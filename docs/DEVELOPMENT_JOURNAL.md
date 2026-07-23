@@ -28,3 +28,7 @@ This journal documents the architectural evolution, feature specifications, desi
 - Specified 3-state Focus HUD lifecycle: Active Task, Upcoming Horizon, and All Work Completed.
 - Integrated Pomodoro focus timer specification with sound notifications.
 
+## July 23, 2026
+- Drafted structured JSON extraction schemas for natural language task creation.
+- Configured @google/genai parser fallback mechanisms for client-side execution.
+
