@@ -40,3 +40,7 @@ This journal documents the architectural evolution, feature specifications, desi
 - Specified HTML parser engine for extracting raw university timetable schedules.
 - Formulated automated column and row matching algorithms for weekly routine spawning.
 
+## July 26, 2026
+- Designed Service Worker (sw.js) caching strategy and asset manifests for PWA readiness.
+- Formulated schedule synchronization message passing protocol between App and SW.
+
