@@ -44,3 +44,7 @@ This journal documents the architectural evolution, feature specifications, desi
 - Designed Service Worker (sw.js) caching strategy and asset manifests for PWA readiness.
 - Formulated schedule synchronization message passing protocol between App and SW.
 
+## July 27, 2026
+- Designed Web Audio API oscillator sound synthesizer for ringtones and alarm chimes.
+- Added specification for custom MP3/WAV audio uploads and storage in LocalStorage.
+
