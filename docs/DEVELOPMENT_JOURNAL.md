@@ -48,3 +48,7 @@ This journal documents the architectural evolution, feature specifications, desi
 - Designed Web Audio API oscillator sound synthesizer for ringtones and alarm chimes.
 - Added specification for custom MP3/WAV audio uploads and storage in LocalStorage.
 
+## July 28, 2026
+- Specified Overdue & Pending Action red alert section in Strategic Life Vault.
+- Designed action horizons for Due This Week, Upcoming, and Completed Vault History.
+
