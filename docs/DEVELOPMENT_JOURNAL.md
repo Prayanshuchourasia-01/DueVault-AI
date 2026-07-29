@@ -52,3 +52,7 @@ This journal documents the architectural evolution, feature specifications, desi
 - Specified Overdue & Pending Action red alert section in Strategic Life Vault.
 - Designed action horizons for Due This Week, Upcoming, and Completed Vault History.
 
+## July 29, 2026
+- Configured Firebase Auth integration with profile authorization lifecycle (PENDING / APPROVED).
+- Drafted Firestore security rules for multi-user isolation and administrative access.
+
