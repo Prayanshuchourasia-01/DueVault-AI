@@ -56,3 +56,7 @@ This journal documents the architectural evolution, feature specifications, desi
 - Configured Firebase Auth integration with profile authorization lifecycle (PENDING / APPROVED).
 - Drafted Firestore security rules for multi-user isolation and administrative access.
 
+## July 30, 2026
+- Designed Admin Dashboard view for user account approval and role management.
+- Integrated real-time Firestore profile status subscription listeners.
+
