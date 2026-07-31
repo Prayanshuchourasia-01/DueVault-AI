@@ -60,3 +60,7 @@ This journal documents the architectural evolution, feature specifications, desi
 - Designed Admin Dashboard view for user account approval and role management.
 - Integrated real-time Firestore profile status subscription listeners.
 
+## July 31, 2026
+- Specified exact-minute start and end notification triggers for timetable blocks.
+- Designed interactive phone notification action buttons (Mark Done / Dismiss).
+
