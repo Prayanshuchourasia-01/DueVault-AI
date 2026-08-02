@@ -109,6 +109,7 @@ function App() {
     deleteTask,
     toggleComplete,
     clearRoutines,
+    clearDayRoutines,
     setTimetableConfig,
     addRoutineException,
     updateRoutineAll,
@@ -479,6 +480,8 @@ function App() {
               timetableConfig={timetableConfig}
               setTimetableConfig={setTimetableConfig}
               addRoutine={addRoutine}
+              clearRoutines={clearRoutines}
+              clearDayRoutines={clearDayRoutines}
               addRoutineException={addRoutineException}
               updateRoutineAll={updateRoutineAll}
               deleteRoutine={deleteRoutine}

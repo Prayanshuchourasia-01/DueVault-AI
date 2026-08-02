@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CalendarClock, Clock, Edit2, Trash2, Copy, ClipboardPaste, Calendar, ArrowRightLeft, Plus, X } from 'lucide-react';
+import { CalendarClock, Clock, Edit2, Trash2, Copy, ClipboardPaste, Calendar, ArrowRightLeft, Plus, X, RotateCcw } from 'lucide-react';
 import RoutineEditModal from '../RoutineEditModal';
 
 const TimetableTab = ({ 
@@ -7,6 +7,8 @@ const TimetableTab = ({
   timetableConfig, 
   setTimetableConfig,
   addRoutine,
+  clearRoutines,
+  clearDayRoutines,
   addRoutineException,
   updateRoutineAll,
   deleteRoutine,
@@ -18,6 +20,7 @@ const TimetableTab = ({
   const [addingRoutineForDay, setAddingRoutineForDay] = useState(null);
   const [copiedDay, setCopiedDay] = useState(null);
   const [layoutMode, setLayoutMode] = useState('VERTICAL'); // 'VERTICAL' or 'HORIZONTAL'
+  const [deletingTask, setDeletingTask] = useState(null); // stores task object when confirming delete
 
   const today = new Date();
   const currentDayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1; 
@@ -62,16 +65,14 @@ const TimetableTab = ({
     });
   };
 
-  const handleDelete = (task) => {
-    const applyMode = window.confirm("Delete this block permanently from all future days?\n\nClick OK for ALL days.\nClick Cancel for JUST TODAY (exception).");
-    if (applyMode) {
+  const confirmDelete = (task, mode) => {
+    if (mode === 'ALL') {
       deleteRoutine(task.id);
     } else {
-      const specificDate = prompt("Enter the specific date to remove it from (YYYY-MM-DD):", new Date().toLocaleDateString('en-CA'));
-      if (specificDate) {
-        addRoutineException(task.id, specificDate, 'deleted');
-      }
+      const specificDate = new Date().toLocaleDateString('en-CA');
+      addRoutineException(task.id, specificDate, 'deleted');
     }
+    setDeletingTask(null);
   };
 
   const handlePasteDay = (targetDay) => {
@@ -82,29 +83,66 @@ const TimetableTab = ({
     }
   };
 
-  const renderTaskCard = (task) => (
-    <div key={task.id} className="group/card bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 shadow-sm hover:border-indigo-500/50 transition-colors relative min-w-[200px] flex-shrink-0">
-      <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 group-hover/card:opacity-100 transition-opacity bg-slate-800/80 backdrop-blur rounded p-1 z-10">
-        <button onClick={() => setEditingRoutine(task)} className="p-1 text-slate-400 hover:text-indigo-400">
-          <Edit2 className="w-3.5 h-3.5" />
-        </button>
-        <button onClick={() => handleDelete(task)} className="p-1 text-slate-400 hover:text-red-400">
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
+  const handleResetWeek = () => {
+    const confirm = window.confirm("Are you sure you want to reset the entire weekly timetable?\n\nThis will clear all repeating routine blocks across all 7 days.");
+    if (confirm && clearRoutines) {
+      clearRoutines();
+    }
+  };
 
-      <div className="flex justify-between items-start mb-1">
-        <span className="text-[10px] font-bold px-1.5 py-0.5 bg-black/40 rounded uppercase text-indigo-400 tracking-wider">
-          {task.category}
-        </span>
+  const handleResetDay = (targetDay) => {
+    const confirm = window.confirm(`Are you sure you want to reset all timetable blocks for ${targetDay}?\n\nThis will clear all repeating routine blocks scheduled on ${targetDay}.`);
+    if (confirm && clearDayRoutines) {
+      clearDayRoutines(targetDay);
+    }
+  };
+
+  const renderTaskCard = (task) => {
+    const isDeleting = deletingTask?.id === task.id;
+    return (
+      <div key={task.id} className={`group/card bg-slate-800/80 border ${isDeleting ? 'border-rose-500/50' : 'border-slate-700/80'} rounded-xl p-3 shadow-sm hover:border-indigo-500/50 transition-colors relative min-w-[200px] flex-shrink-0`}>
+        {!isDeleting ? (
+          <>
+            <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 group-hover/card:opacity-100 transition-opacity bg-slate-800/80 backdrop-blur rounded p-1 z-10">
+              <button onClick={() => setEditingRoutine(task)} className="p-1 text-slate-400 hover:text-indigo-400">
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => setDeletingTask(task)} className="p-1 text-slate-400 hover:text-red-400">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="flex justify-between items-start mb-1">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 bg-black/40 rounded uppercase text-indigo-400 tracking-wider">
+                {task.category}
+              </span>
+            </div>
+            <h4 className="font-bold text-white text-sm line-clamp-2 pr-10">{task.title}</h4>
+            <div className="mt-2 text-xs text-slate-400 flex items-center gap-1 font-mono">
+              <Clock className="w-3 h-3" />
+              {task.start} - {task.end}
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col h-full justify-center space-y-2 animate-fade-in z-20 relative">
+            <p className="text-xs text-rose-300 font-bold text-center">Remove Block?</p>
+            <div className="flex gap-2">
+              <button onClick={() => confirmDelete(task, 'TODAY')} className="flex-1 bg-slate-700 hover:bg-slate-600 text-[10px] font-bold py-1.5 rounded text-white transition-colors">
+                Just Today
+              </button>
+              <button onClick={() => confirmDelete(task, 'ALL')} className="flex-1 bg-rose-500/20 hover:bg-rose-500/40 text-[10px] font-bold text-rose-400 py-1.5 rounded border border-rose-500/30 transition-colors">
+                All Days
+              </button>
+            </div>
+            <button onClick={() => setDeletingTask(null)} className="absolute -top-3 -right-3 p-1 bg-slate-800 rounded-full text-slate-400 hover:text-white border border-slate-700">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
       </div>
-      <h4 className="font-bold text-white text-sm line-clamp-2 pr-10">{task.title}</h4>
-      <div className="mt-2 text-xs text-slate-400 flex items-center gap-1 font-mono">
-        <Clock className="w-3 h-3" />
-        {task.start} - {task.end}
-      </div>
-    </div>
-  );
+    );
+  };
+
 
   return (
     <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-fade-in pb-24 md:pb-6 font-sans">
@@ -124,10 +162,19 @@ const TimetableTab = ({
         <div className="flex flex-col sm:flex-row gap-4 items-center w-full xl:w-auto">
           <button 
             onClick={() => setLayoutMode(prev => prev === 'VERTICAL' ? 'HORIZONTAL' : 'VERTICAL')}
-            className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold border border-slate-700 transition-colors w-full sm:w-auto whitespace-nowrap"
+            className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold border border-slate-700 transition-colors w-full sm:w-auto whitespace-nowrap cursor-pointer"
           >
             <ArrowRightLeft className="w-4 h-4" />
             Swap Layout Axis
+          </button>
+
+          <button 
+            onClick={handleResetWeek}
+            className="flex items-center justify-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition-all w-full sm:w-auto whitespace-nowrap shadow-[0_0_10px_rgba(244,63,94,0.1)] hover:shadow-[0_0_15px_rgba(244,63,94,0.3)] cursor-pointer"
+            title="Reset all repeating routines across the whole week"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset Week
           </button>
           
           <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700 w-full sm:w-auto flex flex-col md:flex-row items-start md:items-center gap-3">
@@ -173,14 +220,14 @@ const TimetableTab = ({
                   <div className="flex gap-1.5 transition-opacity items-center">
                     <button 
                       onClick={() => setAddingRoutineForDay(dayObj.name)}
-                      className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-800/40 transition-colors"
+                      className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-800/40 transition-colors cursor-pointer"
                       title="Add Repeating Block"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                     <button 
                       onClick={() => setCopiedDay(dayObj.name)}
-                      className={`p-1 rounded ${copiedDay === dayObj.name ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-white'}`}
+                      className={`p-1 rounded cursor-pointer ${copiedDay === dayObj.name ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-white'}`}
                       title="Copy Day"
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -188,12 +235,19 @@ const TimetableTab = ({
                     {copiedDay && copiedDay !== dayObj.name && (
                       <button 
                         onClick={() => handlePasteDay(dayObj.name)}
-                        className="p-1 rounded text-cyan-500 hover:text-cyan-300"
+                        className="p-1 rounded text-cyan-500 hover:text-cyan-300 cursor-pointer"
                         title={`Paste ${copiedDay}`}
                       >
                         <ClipboardPaste className="w-3.5 h-3.5" />
                       </button>
                     )}
+                    <button 
+                      onClick={() => handleResetDay(dayObj.name)}
+                      className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      title={`Reset ${dayObj.name}`}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
                 
@@ -230,19 +284,26 @@ const TimetableTab = ({
                   <div className="flex gap-1.5 transition-opacity mt-0 md:mt-4 items-center">
                     <button 
                       onClick={() => setAddingRoutineForDay(dayObj.name)} 
-                      className="p-1.5 rounded-lg bg-emerald-950/40 text-emerald-400 border border-emerald-900/30 hover:text-emerald-300"
+                      className="p-1.5 rounded-lg bg-emerald-950/40 text-emerald-400 border border-emerald-900/30 hover:text-emerald-300 cursor-pointer"
                       title="Add Repeating Block"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
-                    <button onClick={() => setCopiedDay(dayObj.name)} className={`p-1.5 rounded-lg ${copiedDay === dayObj.name ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400 hover:text-white'}`} title="Copy Day">
+                    <button onClick={() => setCopiedDay(dayObj.name)} className={`p-1.5 rounded-lg cursor-pointer ${copiedDay === dayObj.name ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400 hover:text-white'}`} title="Copy Day">
                       <Copy className="w-4 h-4" />
                     </button>
                     {copiedDay && copiedDay !== dayObj.name && (
-                      <button onClick={() => handlePasteDay(dayObj.name)} className="p-1.5 rounded-lg bg-slate-800 text-cyan-400 hover:text-cyan-300" title={`Paste ${copiedDay}`}>
+                      <button onClick={() => handlePasteDay(dayObj.name)} className="p-1.5 rounded-lg bg-slate-800 text-cyan-400 hover:text-cyan-300 cursor-pointer" title={`Paste ${copiedDay}`}>
                         <ClipboardPaste className="w-4 h-4" />
                       </button>
                     )}
+                    <button 
+                      onClick={() => handleResetDay(dayObj.name)} 
+                      className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-slate-700/60 transition-colors cursor-pointer" 
+                      title={`Reset ${dayObj.name}`}
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 

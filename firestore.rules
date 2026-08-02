@@ -2,45 +2,63 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to check if the requester is an Admin
+    // Function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Function to check if the user is an admin
+    // We check the custom users document for the isAdmin flag
     function isAdmin() {
-      return request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // Helper function to verify if a user is approved
-    function isApproved(userId) {
-      return request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(userId)) && (
-          get(/databases/$(database)/documents/users/$(userId)).data.get('isAdmin', false) == true ||
-          get(/databases/$(database)/documents/users/$(userId)).data.get('status', 'APPROVED') == 'APPROVED'
-        );
-    }
-
-    // User profiles: Users can read/write their own profile; Admin can read all profiles
+    // 1. User Profiles and Subcollections
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && (
-        isAdmin() || 
-        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'status']))
-      );
-      allow delete: if false; // Profiles shouldn't be deleted without authorization
+      // User can read and write their own profile; Admins can read/write any profile
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      
+      // Match all subcollections for this user (tasks, routines, finances, history_logs, config)
+      match /{document=**} {
+        allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      }
     }
 
-    // User-specific data (Tasks, Routines, Finances, History logs)
-    // Users can fully read/write their own subcollections; Admin can read them for backups
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId && isApproved(userId);
-      allow read: if isAdmin();
-    }
-
-    // Gemini logs: Authenticated users can write (create logs); Admin can read them
+    // 2. Gemini Audit Logs (gemini_logs)
     match /gemini_logs/{logId} {
-      allow create: if request.auth != null && isApproved(request.auth.uid);
-      allow read: if isAdmin();
-      allow update, delete: if false; // Audit logs should not be modified
+      // Users can create logs (when they make an API request)
+      allow create: if isAuthenticated();
+      // Only admins can read, update, or delete logs
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 3. Admin Configuration (admin/config)
+    match /admin/{document=**} {
+      // Allow read/write to anyone if the document doesn't exist yet (for initial setup)
+      // Otherwise, only admins can read or write
+      allow read, write: if !exists(/databases/$(database)/documents/admin/config) || isAdmin();
+    }
+
+    // 4. Global Config (config/demo_html)
+    match /config/{document=**} {
+      // Anyone authenticated can read global configs
+      allow read: if isAuthenticated();
+      // Only admins can write
+      allow write: if isAdmin();
+    }
+
+    // 5. Rate Limiting Tracker
+    match /rate_limits/{userId} {
+      // Only the specific user can read/write their own rate limit document
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Enforce the rate limit cooldown rule:
+      // The user can only create a new document, OR update it if 2 seconds have passed since the last write.
+      allow write: if isAuthenticated() && request.auth.uid == userId && (
+        !exists(/databases/$(database)/documents/rate_limits/$(userId)) ||
+        request.time > get(/databases/$(database)/documents/rate_limits/$(userId)).data.lastRequestTime + duration.value(2, 's')
+      );
     }
   }
 }

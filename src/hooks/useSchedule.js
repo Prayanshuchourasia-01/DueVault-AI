@@ -466,6 +466,23 @@ export const useSchedule = () => {
     }
   };
 
+  const clearDayRoutines = async (dayOfWeek) => {
+    const dayRoutines = routines.filter(r => r.dayOfWeek === dayOfWeek);
+    if (currentUser) {
+      for (const r of dayRoutines) {
+        const docRef = doc(db, 'users', currentUser.uid, 'routines', r.id);
+        await deleteDoc(docRef);
+        await logHistory('delete', 'routine', r.id, r, null);
+      }
+    } else {
+      setRoutines(prev => {
+        const next = prev.filter(r => r.dayOfWeek !== dayOfWeek);
+        localStorage.setItem('duevault_routines', JSON.stringify(next));
+        return next;
+      });
+    }
+  };
+
   const addRoutineException = async (routineId, dateStr, type, changes = {}) => {
     const routine = routines.find(r => r.id === routineId);
     if (!routine) return;
@@ -603,7 +620,7 @@ export const useSchedule = () => {
     tasks, routines, todaysRoutines, timetableConfig,
     activeTask, nextTask,
     addTask, updateTask, deleteTask, toggleComplete, clearAllCompleted,
-    addRoutine, clearRoutines, addRoutineException, updateRoutineAll, deleteRoutine,
+    addRoutine, clearRoutines, clearDayRoutines, addRoutineException, updateRoutineAll, deleteRoutine,
     duplicateRoutinesToDays, replaceDayRoutines,
     setTimetableConfig: handleSetTimetableConfig
   };

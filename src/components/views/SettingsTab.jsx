@@ -12,7 +12,7 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
   const [savedMessage, setSavedMessage] = useState('');
   
   const { testAlarm } = useAudioAlarm();
-  const { permission, askPermission } = useNotifications();
+  const { permission, askPermission, testNotification } = useNotifications();
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -211,16 +211,21 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
               Notifications & Audio
             </h3>
             
-            <div className="bg-slate-850/40 rounded-xl p-3 border border-slate-800 flex items-center justify-between text-xs">
+            <div className="bg-slate-850/40 rounded-xl p-3 border border-slate-800 flex items-center justify-between text-xs gap-2">
               <div>
                 <p className="font-semibold text-slate-300">Browser Push Notifications</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">Status: <span className={permission === 'granted' ? 'text-emerald-400' : 'text-amber-400'}>{permission.toUpperCase()}</span></p>
+                <p className="text-[10px] text-slate-500 mt-0.5">Status: <span className={permission === 'granted' ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{permission.toUpperCase()}</span></p>
               </div>
-              {permission !== 'granted' && (
-                <button onClick={askPermission} className="px-3 py-1 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-colors rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer">
-                  Enable
+              <div className="flex items-center gap-1.5">
+                {permission !== 'granted' && (
+                  <button onClick={askPermission} className="px-3 py-1.5 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-colors rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer">
+                    Enable
+                  </button>
+                )}
+                <button onClick={testNotification} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer">
+                  Test Push
                 </button>
-              )}
+              </div>
             </div>
 
             {/* Ringtones 2x2 Grid */}

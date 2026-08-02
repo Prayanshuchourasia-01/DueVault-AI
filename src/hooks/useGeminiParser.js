@@ -20,45 +20,64 @@ export const useGeminiParser = () => {
     }
   };
 
-  const checkRateLimit = () => {
+  const checkRateLimit = async () => {
+    const user = auth.currentUser;
+    if (!user) return; // Fallback
+
     const LIMIT = 15; // 15 requests per minute
     const WINDOW_MS = 60000; // 1 minute
     const COOLDOWN_MS = 2000; // 2 seconds between individual calls
     
     const now = Date.now();
-    const rawTimestamps = localStorage.getItem('duevault_api_timestamps');
-    let timestamps = [];
-    if (rawTimestamps) {
-      try {
-        timestamps = JSON.parse(rawTimestamps);
-      } catch (e) {
-        timestamps = [];
+    const rateDocRef = doc(db, 'rate_limits', user.uid);
+    
+    try {
+      const snap = await getDoc(rateDocRef);
+      let timestamps = [];
+
+      if (snap.exists()) {
+        const data = snap.data();
+        timestamps = data.timestamps || [];
+        
+        // Check cooldown
+        if (timestamps.length > 0) {
+          const lastRequest = timestamps[timestamps.length - 1];
+          if (now - lastRequest < COOLDOWN_MS) {
+            const remainingCooldown = Math.ceil((COOLDOWN_MS - (now - lastRequest)) / 1000);
+            throw new Error(`Rate limit cooldown: Please wait ${remainingCooldown} second(s) before sending another request.`);
+          }
+        }
+        
+        // Filter for timestamps in the current window
+        const windowStart = now - WINDOW_MS;
+        timestamps = timestamps.filter(t => t > windowStart);
+        
+        // Check capacity
+        if (timestamps.length >= LIMIT) {
+          const oldestTimestamp = timestamps[0];
+          const timeToWait = Math.ceil((WINDOW_MS - (now - oldestTimestamp)) / 1000);
+          throw new Error(`Rate limit reached: You can make at most ${LIMIT} API calls per minute. Please wait ${timeToWait} seconds before requesting again.`);
+        }
       }
-    }
-    
-    // Filter for timestamps in the current window
-    const windowStart = now - WINDOW_MS;
-    timestamps = timestamps.filter(t => t > windowStart);
-    
-    // Check cooldown
-    if (timestamps.length > 0) {
-      const lastRequest = timestamps[timestamps.length - 1];
-      if (now - lastRequest < COOLDOWN_MS) {
-        const remainingCooldown = Math.ceil((COOLDOWN_MS - (now - lastRequest)) / 1000);
-        throw new Error(`Rate limit cooldown: Please wait ${remainingCooldown} second(s) before sending another request.`);
+      
+      // Record current request
+      timestamps.push(now);
+      
+      // Attempt to save to Firestore. 
+      // If the 2-second cooldown is violated at the server level, this will throw permission-denied.
+      await setDoc(rateDocRef, {
+        timestamps,
+        lastRequestTime: serverTimestamp()
+      }, { merge: true });
+
+    } catch (err) {
+      if (err.message.includes('Rate limit')) throw err;
+      if (err.code === 'permission-denied' || err.message.includes('Missing or insufficient permissions')) {
+         throw new Error('Server rate limit enforced. Please wait a few seconds before requesting again.');
       }
+      console.error('Rate limit sync failed:', err);
+      // In case of pure network failure reading/writing the doc, allow the request to proceed.
     }
-    
-    // Check capacity
-    if (timestamps.length >= LIMIT) {
-      const oldestTimestamp = timestamps[0];
-      const timeToWait = Math.ceil((WINDOW_MS - (now - oldestTimestamp)) / 1000);
-      throw new Error(`Rate limit reached: You can make at most ${LIMIT} API calls per minute. Please wait ${timeToWait} seconds before requesting again.`);
-    }
-    
-    // Record current request
-    timestamps.push(now);
-    localStorage.setItem('duevault_api_timestamps', JSON.stringify(timestamps));
   };
 
   const logGeminiUsage = async (actionType, textSnippet) => {
@@ -121,7 +140,7 @@ Instructions:
 `;
 
     try {
-      checkRateLimit();
+      await checkRateLimit();
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       
       const payload = {
@@ -212,7 +231,7 @@ Instructions:
 `;
 
     try {
-      checkRateLimit();
+      await checkRateLimit();
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       const userPrompt = customInstructions 
         ? `Extract weekly recurring schedule from HTML: ${htmlText.substring(0, 50000)}\n\nUser custom guidance: "${customInstructions}"`
