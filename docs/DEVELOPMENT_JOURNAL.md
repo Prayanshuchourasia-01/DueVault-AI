@@ -64,3 +64,7 @@ This journal documents the architectural evolution, feature specifications, desi
 - Specified exact-minute start and end notification triggers for timetable blocks.
 - Designed interactive phone notification action buttons (Mark Done / Dismiss).
 
+## August 3, 2026
+- Formulated 7:00 AM - 9:00 AM daily morning overdue notification algorithm.
+- Configured daily alert deduplication flags in localStorage.
+
