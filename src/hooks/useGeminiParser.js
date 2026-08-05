@@ -20,6 +20,22 @@ export const useGeminiParser = () => {
     }
   };
 
+  const fetchWithRetry = async (endpoint, options, maxRetries = 3) => {
+    for (let i = 0; i < maxRetries; i++) {
+      const response = await fetch(endpoint, options);
+      if (response.ok || (response.status !== 429 && response.status !== 503)) {
+        return response;
+      }
+      if (i < maxRetries - 1) {
+        const waitTime = Math.pow(2, i) * 2000 + Math.random() * 1000;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } else {
+        return response;
+      }
+    }
+  };
+
+
   const checkRateLimit = async () => {
     const user = auth.currentUser;
     if (!user) return; // Fallback
@@ -171,7 +187,7 @@ Instructions:
         }
       };
 
-      const response = await fetch(endpoint, {
+      const response = await fetchWithRetry(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -259,8 +275,8 @@ Instructions:
         }
       };
 
-      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+      const response = await fetchWithRetry(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!response.ok) throw new Error(`API request failed with status ${response.status}. ${response.status === 429 ? 'Rate limit exceeded even after retrying.' : ''}`);
       
       const data = await response.json();
       const textResult = data?.candidates?.[0]?.content?.parts?.[0]?.text;

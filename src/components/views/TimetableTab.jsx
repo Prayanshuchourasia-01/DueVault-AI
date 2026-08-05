@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CalendarClock, Clock, Edit2, Trash2, Copy, ClipboardPaste, Calendar, ArrowRightLeft, Plus, X, RotateCcw } from 'lucide-react';
+import { CalendarClock, Clock, Edit2, Trash2, Copy, ClipboardPaste, Calendar, ArrowRightLeft, Plus, X, RotateCcw, Loader2 } from 'lucide-react';
 import RoutineEditModal from '../RoutineEditModal';
 
 const TimetableTab = ({ 
@@ -21,6 +21,7 @@ const TimetableTab = ({
   const [copiedDay, setCopiedDay] = useState(null);
   const [layoutMode, setLayoutMode] = useState('VERTICAL'); // 'VERTICAL' or 'HORIZONTAL'
   const [deletingTask, setDeletingTask] = useState(null); // stores task object when confirming delete
+  const [isResetting, setIsResetting] = useState(false);
 
   const today = new Date();
   const currentDayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1; 
@@ -83,17 +84,21 @@ const TimetableTab = ({
     }
   };
 
-  const handleResetWeek = () => {
+  const handleResetWeek = async () => {
     const confirm = window.confirm("Are you sure you want to reset the entire weekly timetable?\n\nThis will clear all repeating routine blocks across all 7 days.");
     if (confirm && clearRoutines) {
-      clearRoutines();
+      setIsResetting(true);
+      await clearRoutines();
+      setIsResetting(false);
     }
   };
 
-  const handleResetDay = (targetDay) => {
+  const handleResetDay = async (targetDay) => {
     const confirm = window.confirm(`Are you sure you want to reset all timetable blocks for ${targetDay}?\n\nThis will clear all repeating routine blocks scheduled on ${targetDay}.`);
     if (confirm && clearDayRoutines) {
-      clearDayRoutines(targetDay);
+      setIsResetting(true);
+      await clearDayRoutines(targetDay);
+      setIsResetting(false);
     }
   };
 
@@ -145,8 +150,17 @@ const TimetableTab = ({
 
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-fade-in pb-24 md:pb-6 font-sans">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-fade-in pb-24 md:pb-6 font-sans relative">
       
+      {/* Loading Overlay */}
+      {isResetting && (
+        <div className="absolute inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
+          <Loader2 className="w-10 h-10 text-cyan-400 animate-spin mb-4" />
+          <h3 className="text-xl font-bold text-white">Resetting Timetable</h3>
+          <p className="text-sm text-slate-400 mt-2 animate-pulse">Removing routine blocks from your schedule...</p>
+        </div>
+      )}
+
       {/* Header & Global Config */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col xl:flex-row gap-6 justify-between items-start xl:items-center">
         <div>
