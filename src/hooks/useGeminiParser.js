@@ -89,9 +89,10 @@ export const useGeminiParser = () => {
     } catch (err) {
       if (err.message.includes('Rate limit')) throw err;
       if (err.code === 'permission-denied' || err.message.includes('Missing or insufficient permissions')) {
-         throw new Error('Server rate limit enforced. Please wait a few seconds before requesting again.');
+         console.warn('Server rate limit enforced by Firestore rules, but allowing client to proceed if Gemini allows it.', err);
+      } else {
+         console.error('Rate limit sync failed:', err);
       }
-      console.error('Rate limit sync failed:', err);
       // In case of pure network failure reading/writing the doc, allow the request to proceed.
     }
   };

@@ -11,6 +11,7 @@ service cloud.firestore {
     // We check the custom users document for the isAdmin flag
     function isAdmin() {
       return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
@@ -57,6 +58,7 @@ service cloud.firestore {
       // The user can only create a new document, OR update it if 2 seconds have passed since the last write.
       allow write: if isAuthenticated() && request.auth.uid == userId && (
         !exists(/databases/$(database)/documents/rate_limits/$(userId)) ||
+        !("lastRequestTime" in get(/databases/$(database)/documents/rate_limits/$(userId)).data) ||
         request.time > get(/databases/$(database)/documents/rate_limits/$(userId)).data.lastRequestTime + duration.value(2, 's')
       );
     }
