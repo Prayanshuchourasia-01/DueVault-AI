@@ -14,7 +14,9 @@ import AuthOverlay from './components/AuthOverlay';
 import { useSchedule } from './hooks/useSchedule';
 import { useAudioAlarm } from './hooks/useAudioAlarm';
 import { useNotifications } from './hooks/useNotifications';
+import { useNotes } from './hooks/useNotes';
 import { ToastContainer } from './components/ToastContainer';
+import NotesTab from './components/views/NotesTab';
 
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -117,6 +119,13 @@ function App() {
     duplicateRoutinesToDays,
     replaceDayRoutines
   } = useSchedule();
+
+  const {
+    notes,
+    addNote,
+    updateNote,
+    deleteNote
+  } = useNotes();
 
   const [reminders, setReminders] = useState([]);
   const [dismissedReminderIds, setDismissedReminderIds] = useState(() => {
@@ -502,6 +511,15 @@ function App() {
 
           {activeTab === 'finances' && (
             <FinanceTab tasks={tasks} sendNotification={sendNotification} onUpdateTask={updateTask} />
+          )}
+
+          {activeTab === 'notes' && (
+            <NotesTab 
+              notes={notes}
+              onAddNote={addNote}
+              onUpdateNote={updateNote}
+              onDeleteNote={deleteNote}
+            />
           )}
 
           {activeTab === 'settings' && (

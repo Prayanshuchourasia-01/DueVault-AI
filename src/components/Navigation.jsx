@@ -38,8 +38,9 @@ const Navigation = ({
     { id: 'focus', icon: Home, label: 'Focus HUD' },
     { id: 'dashboard', icon: CalendarDays, label: 'Dashboard' },
     { id: 'timetable', icon: CalendarClock, label: 'Timetable' },
-    { id: 'vault', icon: Vault, label: 'The Vault' },
-    { id: 'finances', icon: Wallet, label: 'Finances' }
+    { id: 'vault', icon: Vault, label: 'Vault' },
+    { id: 'finances', icon: Wallet, label: 'Finances' },
+    { id: 'notes', icon: StickyNote, label: 'Notes' }
   ];
 
   // Admin Space Sidebar Items

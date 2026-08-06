@@ -9,7 +9,8 @@ import {
   query, 
   orderBy, 
   limit,
-  writeBatch
+  writeBatch,
+  deleteDoc
 } from 'firebase/firestore';
 import { 
   ShieldAlert, 
@@ -40,7 +41,7 @@ const safeStr = (val) => (val || '').toString().toLowerCase();
 const AdminTab = ({ subTab }) => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedUserData, setSelectedUserData] = useState({ tasks: [], routines: [], finances: null, history: [] });
+  const [selectedUserData, setSelectedUserData] = useState({ tasks: [], routines: [], finances: null, history: [], notes: [] });
   const [geminiLogs, setGeminiLogs] = useState([]);
   
   const [myIp, setMyIp] = useState('');
@@ -153,7 +154,7 @@ const AdminTab = ({ subTab }) => {
       email: user.email || '',
       phone: user.phone || ''
     });
-    setSelectedUserData({ tasks: [], routines: [], finances: null, history: [] });
+    setSelectedUserData({ tasks: [], routines: [], finances: null, history: [], notes: [] });
     setLoadingUserData(true);
     try {
       const uid = user.uid;
@@ -182,7 +183,12 @@ const AdminTab = ({ subTab }) => {
         history = [];
       }
 
-      setSelectedUserData({ tasks, routines, finances, history });
+      // Notes
+      const notesSnap = await getDocs(collection(db, 'users', uid, 'notes'));
+      const notes = [];
+      notesSnap.forEach(d => notes.push(d.data()));
+
+      setSelectedUserData({ tasks, routines, finances, history, notes });
     } catch (err) {
       console.error('Error loading user sub-data:', err);
       showStatus('Failed to load user data: ' + err.message, 'error');
@@ -320,6 +326,21 @@ const AdminTab = ({ subTab }) => {
     }
   };
 
+  // Delete User Note
+  const handleDeleteUserNote = async (noteId) => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    try {
+      await deleteDoc(doc(db, 'users', selectedUser.uid, 'notes', noteId));
+      setSelectedUserData(prev => ({
+        ...prev,
+        notes: prev.notes.filter(n => n.id !== noteId)
+      }));
+      showStatus('Note deleted successfully.');
+    } catch (err) {
+      showStatus('Failed to delete note: ' + err.message, 'error');
+    }
+  };
+
   // 11. Purge All User Data
   const handleDeleteUserData = async (userId, userName) => {
     if (!confirm(`Are you absolutely sure you want to PERMANENTLY delete all data for ${userName}?\n\nThis will wipe their tasks, routines, finances, logs, and account profile. This cannot be undone.`)) return;
@@ -339,7 +360,7 @@ const AdminTab = ({ subTab }) => {
       await batch.commit();
       setUsers(prev => prev.filter(u => u.uid !== userId));
       setSelectedUser(null);
-      setSelectedUserData({ tasks: [], routines: [], finances: null, history: [] });
+      setSelectedUserData({ tasks: [], routines: [], finances: null, history: [], notes: [] });
       showStatus(`All data for ${userName} has been permanently purged.`);
     } catch (err) {
       showStatus('Failed to purge user data: ' + err.message, 'error');
@@ -656,6 +677,7 @@ const AdminTab = ({ subTab }) => {
                     { id: 'profile', label: 'Profile' },
                     { id: 'finances', label: `Finances` },
                     { id: 'tasks', label: `Tasks (${selectedUserData.tasks.length})` },
+                    { id: 'notes', label: `Notes (${selectedUserData.notes?.length || 0})` },
                     { id: 'history', label: 'History' }
                   ].map(tab => (
                     <button
@@ -832,6 +854,36 @@ const AdminTab = ({ subTab }) => {
                               </div>
                             );
                           })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* NOTES TAB */}
+                  {activeUserTab === 'notes' && (
+                    <div className="space-y-2 animate-fade-in">
+                      {(!selectedUserData.notes || selectedUserData.notes.length === 0) ? (
+                        <div className="text-center py-8 text-slate-500 text-xs italic">
+                          No notes found for this user.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {selectedUserData.notes.sort((a, b) => b.updatedAt - a.updatedAt).map(note => (
+                            <div key={note.id} className="bg-slate-950/40 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                              <p className="text-xs text-slate-300 whitespace-pre-wrap">{note.text}</p>
+                              <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-800/80">
+                                <span className="text-[9px] text-slate-500 font-mono">
+                                  {new Date(note.updatedAt).toLocaleDateString('en-CA')}
+                                </span>
+                                <button
+                                  onClick={() => handleDeleteUserNote(note.id)}
+                                  className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>

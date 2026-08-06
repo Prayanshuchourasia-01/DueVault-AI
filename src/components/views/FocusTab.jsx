@@ -3,6 +3,7 @@ import { FocusHUD } from '../FocusHUD';
 import Timetable from '../Timetable';
 import { InputEngine } from '../InputEngine';
 import { PomodoroTimer } from '../PomodoroTimer';
+import { AlarmWidget } from '../AlarmWidget';
 
 const academicCategories = ['study', 'coding', 'class', 'lab', 'hackathon', 'homework', 'exam', 'dsa', 'lecture', 'academic'];
 
@@ -86,10 +87,11 @@ const FocusTab = ({
 
       <div className={`grid grid-cols-1 gap-6 mx-auto ${gridColsClass}`}>
         
-        {/* Column 1: Focus HUD & Pomodoro */}
+        {/* Column 1: Focus HUD & Pomodoro & Alarm */}
         <div className="lg:col-span-1 space-y-6 flex flex-col">
           <FocusHUD activeTask={activeTask} nextTask={nextTask} onToggleComplete={onToggleComplete} />
           <PomodoroTimer startAlarm={startAlarm} />
+          <AlarmWidget startAlarm={startAlarm} />
         </div>
 
         {/* Column 2: Academic & Focus Timetable */}

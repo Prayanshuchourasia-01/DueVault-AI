@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Coffee, BrainCircuit } from 'lucide-react';
+import { Play, Pause, RotateCcw, Coffee, BrainCircuit, Settings2, X } from 'lucide-react';
 
 export const PomodoroTimer = ({ startAlarm }) => {
-  const FOCUS_TIME = 30 * 60; // 30 minutes
-  const REST_TIME = 2 * 60;   // 2 minutes
+  const [customFocusMin, setCustomFocusMin] = useState(30);
+  const [customRestMin, setCustomRestMin] = useState(2);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Dynamic durations based on custom settings
+  const FOCUS_TIME = customFocusMin * 60;
+  const REST_TIME = customRestMin * 60;
 
   const [timeLeft, setTimeLeft] = useState(FOCUS_TIME);
   const [isRunning, setIsRunning] = useState(false);
@@ -32,7 +37,7 @@ export const PomodoroTimer = ({ startAlarm }) => {
       }
     }
     return () => clearInterval(interval);
-  }, [isRunning, timeLeft, mode, startAlarm]);
+  }, [isRunning, timeLeft, mode, startAlarm, FOCUS_TIME, REST_TIME]);
 
   const toggleTimer = () => setIsRunning(!isRunning);
   
@@ -44,6 +49,12 @@ export const PomodoroTimer = ({ startAlarm }) => {
   const switchMode = (newMode) => {
     setMode(newMode);
     setTimeLeft(newMode === 'FOCUS' ? FOCUS_TIME : REST_TIME);
+    setIsRunning(false);
+  };
+
+  const applyCustomSettings = () => {
+    setShowSettings(false);
+    setTimeLeft(mode === 'FOCUS' ? customFocusMin * 60 : customRestMin * 60);
     setIsRunning(false);
   };
 
@@ -67,21 +78,67 @@ export const PomodoroTimer = ({ startAlarm }) => {
           Paradroma Timer
         </h3>
         
-        <div className="flex bg-slate-800 rounded-lg p-1">
+        <div className="flex bg-slate-800 rounded-lg p-1 items-center">
           <button 
             onClick={() => switchMode('FOCUS')}
             className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === 'FOCUS' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}
           >
-            Focus (30m)
+            Focus ({customFocusMin}m)
           </button>
           <button 
             onClick={() => switchMode('REST')}
             className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === 'REST' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}
           >
-            Rest (2m)
+            Rest ({customRestMin}m)
+          </button>
+          <button 
+            onClick={() => setShowSettings(!showSettings)}
+            className={`ml-2 p-1.5 rounded-md transition-all ${showSettings ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
+            title="Custom Timer Settings"
+          >
+            <Settings2 className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      {showSettings && (
+        <div className="mb-6 p-4 bg-slate-950/50 border border-slate-800 rounded-xl relative animate-in fade-in slide-in-from-top-2">
+          <button onClick={() => setShowSettings(false)} className="absolute top-2 right-2 text-slate-500 hover:text-slate-300">
+            <X className="w-4 h-4" />
+          </button>
+          <h4 className="text-xs font-bold text-indigo-400 mb-3 uppercase tracking-wider">Custom Timer Durations</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Focus Time (min)</label>
+              <input 
+                type="number" 
+                min="1" 
+                max="120"
+                value={customFocusMin}
+                onChange={e => setCustomFocusMin(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Rest Time (min)</label>
+              <input 
+                type="number" 
+                min="1" 
+                max="60"
+                value={customRestMin}
+                onChange={e => setCustomRestMin(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+          <button 
+            onClick={applyCustomSettings}
+            className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-xs transition-all"
+          >
+            Apply Durations
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col items-center justify-center py-6">
         <div className={`text-6xl font-mono font-extrabold tracking-widest ${mode === 'FOCUS' ? 'text-cyan-400' : 'text-emerald-400'} drop-shadow-md mb-6`}>
@@ -92,7 +149,7 @@ export const PomodoroTimer = ({ startAlarm }) => {
         <div className="w-full max-w-xs bg-slate-800 rounded-full h-2 mb-8">
           <div 
             className={`h-full rounded-full transition-all duration-1000 ${mode === 'FOCUS' ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`}
-            style={{ width: `${progressPercent}%` }}
+            style={{ width: `${Math.max(0, Math.min(100, progressPercent))}%` }}
           />
         </div>
 
