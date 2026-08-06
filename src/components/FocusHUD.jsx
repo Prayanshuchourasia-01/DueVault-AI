@@ -22,12 +22,12 @@ export const FocusHUD = ({ activeTask, nextTask, onToggleComplete }) => {
   const hasActive = !!activeTask;
   
   const title = hasActive ? activeTask.title : "Free Time / Focus Prep";
-  const urgency = hasActive ? activeTask.urgency : "LOW";
-  const type = hasActive ? activeTask.type : "Break";
+  const urgency = hasActive ? (activeTask.priority || activeTask.urgency) : "LOW";
+  const type = hasActive ? (activeTask.category || activeTask.type || "TASK") : "Break";
   const targetTime = hasActive ? activeTask.end : (nextTask ? nextTask.start : null);
   
   const countdownStr = targetTime ? formatCountdown(targetTime) : "--:--:--";
-  const progressPercent = hasActive ? getTaskProgress(activeTask.start, activeTask.end) : 0;
+  const progressPercent = hasActive && activeTask.start && activeTask.end ? getTaskProgress(activeTask.start, activeTask.end) : 0;
 
   if (!hasActive && !nextTask) {
     return (
@@ -60,12 +60,12 @@ export const FocusHUD = ({ activeTask, nextTask, onToggleComplete }) => {
           <div className="flex gap-2">
             <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
               hasActive 
-                ? (urgency === 'HIGH' ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400')
+                ? ((urgency === 'HIGH' || urgency === 'CRITICAL') ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400')
                 : 'bg-slate-800 text-slate-400'
             }`}>
               {type}
             </span>
-            {hasActive && urgency === 'HIGH' && (
+            {hasActive && (urgency === 'HIGH' || urgency === 'CRITICAL') && (
               <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-rose-500/20 text-rose-400 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 HIGH PRIORITY
@@ -98,7 +98,7 @@ export const FocusHUD = ({ activeTask, nextTask, onToggleComplete }) => {
         {hasActive ? (
           <div className="space-y-4 pt-4 border-t border-slate-800/50">
             <div className="flex justify-between items-center text-sm text-slate-400 font-medium">
-              <span>{formatFriendlyTime(activeTask.start)} - {formatFriendlyTime(activeTask.end)}</span>
+              <span>{activeTask.start ? formatFriendlyTime(activeTask.start) : 'No Start Time'} - {activeTask.end ? formatFriendlyTime(activeTask.end) : 'No End Time'}</span>
               <span className="font-mono text-white">{progressPercent}%</span>
             </div>
             
@@ -116,7 +116,7 @@ export const FocusHUD = ({ activeTask, nextTask, onToggleComplete }) => {
               <button
                 onClick={() => onToggleComplete(activeTask.id)}
                 className={`w-full py-3 px-6 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                  urgency === 'HIGH'
+                  (urgency === 'HIGH' || urgency === 'CRITICAL')
                     ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500 hover:text-white'
                     : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500 hover:text-white'
                 }`}

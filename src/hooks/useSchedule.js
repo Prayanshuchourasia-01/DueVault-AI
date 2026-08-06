@@ -242,22 +242,32 @@ export const useSchedule = () => {
     
     setTodaysRoutines(todaysRoutines);
 
-    // Active Focus HUD candidates are strictly timetable routines (no Vault tasks)
-    const allActiveCandidates = [...todaysRoutines];
+    // Active Focus HUD candidates include both timetable routines AND today's scheduled tasks
+    const todayTasks = tasks.filter(t => t.date === todayDateStr);
+    const allActiveCandidates = [...todaysRoutines, ...todayTasks];
 
-    const sortedTasks = allActiveCandidates.sort((a, b) => new Date(a.start) - new Date(b.start));
+    const sortedTasks = allActiveCandidates.sort((a, b) => {
+      const timeA = a.start ? new Date(a.start).getTime() : 0;
+      const timeB = b.start ? new Date(b.start).getTime() : 0;
+      
+      // Handle NaN just in case
+      const validTimeA = isNaN(timeA) ? 0 : timeA;
+      const validTimeB = isNaN(timeB) ? 0 : timeB;
+
+      return validTimeA - validTimeB;
+    });
     
     let active = null;
     const upcoming = [];
 
     sortedTasks.forEach(task => {
-      if (!task.completed) {
+      if (!task.completed && task.start && task.end) {
         if (isTaskActive(task.start, task.end)) {
           if (!active) {
             active = task;
           } else {
             const pLevel = { 'LOW': 1, 'MEDIUM': 2, 'HIGH': 3, 'CRITICAL': 4 };
-            if (pLevel[task.priority] > pLevel[active.priority]) {
+            if ((pLevel[task.priority] || 1) > (pLevel[active.priority] || 1)) {
               upcoming.push(active);
               active = task;
             } else {
@@ -273,7 +283,7 @@ export const useSchedule = () => {
     upcoming.sort((a, b) => new Date(a.start) - new Date(b.start));
     setActiveTask(active);
     setNextTask(upcoming.length > 0 ? upcoming[0] : null);
-  }, [routines, timetableConfig]);
+  }, [routines, tasks, timetableConfig]);
 
   useEffect(() => {
     recalculateSchedule();
