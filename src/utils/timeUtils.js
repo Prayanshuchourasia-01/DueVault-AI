@@ -53,7 +53,10 @@ export const isTaskOver = (endISO) => {
  * @returns {string}
  */
 export const formatFriendlyDate = (dateISO) => {
+  if (!dateISO) return 'No Date';
   const date = new Date(dateISO);
+  if (isNaN(date.getTime())) return 'No Date';
+
   const today = new Date();
   const tomorrow = new Date();
   tomorrow.setDate(today.getDate() + 1);
@@ -73,7 +76,9 @@ export const formatFriendlyDate = (dateISO) => {
  * @returns {string}
  */
 export const formatFriendlyTime = (dateISO) => {
+  if (!dateISO) return 'No time';
   const date = new Date(dateISO);
+  if (isNaN(date.getTime())) return 'No time';
   return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
