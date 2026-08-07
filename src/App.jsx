@@ -322,11 +322,11 @@ function App() {
 
   if (isPendingApproval) {
     return (
-      <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-4 z-[999] overflow-y-auto">
+      <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-0 md:p-4 z-[999] overflow-y-auto">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-rose-500/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-3xl p-8 w-full max-w-md shadow-2xl relative text-center space-y-6 animate-fade-in">
+        <div className="bg-slate-900/80 backdrop-blur-md border-x-0 border-y md:border border-slate-800 rounded-none md:rounded-3xl p-6 md:p-8 w-full min-h-[100dvh] md:min-h-0 max-w-md shadow-2xl relative text-center space-y-6 flex flex-col justify-center animate-fade-in">
           <div className="mx-auto bg-rose-500/20 p-4 rounded-2xl w-fit shadow-[0_0_15px_rgba(244,63,94,0.2)]">
             <ShieldAlert className="w-10 h-10 text-rose-400" />
           </div>

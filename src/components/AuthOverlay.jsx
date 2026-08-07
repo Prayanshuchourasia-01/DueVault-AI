@@ -162,12 +162,12 @@ const AuthOverlay = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-4 z-[999] overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-0 md:p-4 z-[999] overflow-y-auto">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl relative">
+      <div className="bg-slate-900/80 backdrop-blur-md border-x-0 border-y md:border border-slate-800 rounded-none md:rounded-3xl p-6 md:p-8 w-full min-h-[100dvh] md:min-h-0 max-w-md shadow-2xl relative flex flex-col justify-center">
         
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-6">
