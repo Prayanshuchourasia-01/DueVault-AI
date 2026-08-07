@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   Terminal,
   Globe,
-  LayoutGrid
+  LayoutGrid,
+  StickyNote
 } from 'lucide-react';
 
 const Navigation = ({ 

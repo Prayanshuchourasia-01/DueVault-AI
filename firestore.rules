@@ -17,12 +17,15 @@ service cloud.firestore {
 
     // 1. User Profiles and Subcollections
     match /users/{userId} {
-      // User can read and write their own profile; Admins can read/write any profile
-      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // User can read and write their own profile
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      // Admins can read/write any profile
+      allow read, write: if isAuthenticated() && request.auth.uid != userId && isAdmin();
       
       // Match all subcollections for this user (tasks, routines, finances, history_logs, config)
       match /{document=**} {
-        allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+        allow read, write: if isAuthenticated() && request.auth.uid != userId && isAdmin();
       }
     }
 
