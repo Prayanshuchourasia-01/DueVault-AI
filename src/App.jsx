@@ -383,11 +383,11 @@ function App() {
   }
 
   return (
-    <div className={`min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col md:flex-row print:bg-white print:text-black ${theme === 'light' ? 'light-theme' : ''}`}>
+    <div className={`h-[100dvh] w-full overflow-hidden bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col md:flex-row print:bg-white print:text-black ${theme === 'light' ? 'light-theme' : ''}`}>
         <ToastContainer />
 
         {/* Sidebar Navigation */}
-        <div className="print:hidden h-full">
+        <div className="print:hidden z-40 shrink-0">
           <Navigation 
             activeTab={activeTab} 
             setActiveTab={setActiveTab} 
@@ -402,7 +402,7 @@ function App() {
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 print:p-0 print:h-auto print:overflow-visible">
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-24 md:pb-8 print:p-0 print:h-auto print:overflow-visible">
 
           {/* Admin Banner inside User View Mode */}
           {isAdmin && !adminMode && (

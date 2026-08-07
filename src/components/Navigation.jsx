@@ -202,7 +202,7 @@ const Navigation = ({
 
         {/* Mobile Horizontal Bottom Menu */}
         <div className="flex md:hidden w-full justify-between items-center px-1">
-          {mainNavItems.map(item => {
+          {mainNavItems.slice(0, 4).map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id && !isMobileMenuOpen;
             return (
@@ -271,6 +271,28 @@ const Navigation = ({
               </div>
             </div>
           )}
+
+          {/* Remaining Nav Items (Overflow) */}
+          <div className="flex flex-col gap-2">
+            {mainNavItems.slice(4).map(item => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
+                  className={`flex items-center gap-3.5 p-3 rounded-xl transition-all w-full cursor-pointer border ${
+                    isActive 
+                      ? (adminMode ? 'bg-rose-500/10 text-rose-400 border-rose-500/25' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/25') 
+                      : 'text-slate-300 hover:bg-slate-800/50 border-transparent'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 ${isActive ? (adminMode ? 'text-rose-400' : 'text-indigo-400') : 'text-slate-400'}`} />
+                  <span className="text-sm font-bold">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
           {/* Settings option (only for standard mode or fallback) */}
           {!adminMode && (
