@@ -203,7 +203,7 @@ const Navigation = ({
 
         {/* Mobile Horizontal Bottom Menu */}
         <div className="flex md:hidden w-full justify-between items-center px-1">
-          {mainNavItems.slice(0, 4).map(item => {
+          {mainNavItems.filter(item => item.id !== 'dashboard').slice(0, 4).map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id && !isMobileMenuOpen;
             return (
@@ -243,12 +243,9 @@ const Navigation = ({
         <div className="md:hidden fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 p-5 z-[35] rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col gap-3.5 animate-slide-up">
           
           <div className="flex items-center justify-between border-b border-slate-850 pb-2.5">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Device Configurations</span>
-            <button 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-slate-400 hover:text-rose-400"
-            >
-              <X className="w-4 h-4" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">More Tools</span>
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 rounded-full hover:bg-slate-800 transition-colors cursor-pointer">
+              <X className="w-4 h-4 text-slate-400" />
             </button>
           </div>
 
@@ -275,7 +272,7 @@ const Navigation = ({
 
           {/* Remaining Nav Items (Overflow) */}
           <div className="flex flex-col gap-2">
-            {mainNavItems.slice(4).map(item => {
+            {mainNavItems.filter(item => item.id !== 'dashboard').slice(4).map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
