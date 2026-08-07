@@ -118,7 +118,10 @@ export const useSchedule = () => {
       // Load offline from localStorage and reset states
       const savedTasks = localStorage.getItem('duevault_tasks');
       if (savedTasks) {
-        try { setTasks(JSON.parse(savedTasks)); } catch (e) { setTasks(generateDefaultTasks()); }
+        try { 
+          const parsed = JSON.parse(savedTasks);
+          setTasks(Array.isArray(parsed) ? parsed : generateDefaultTasks()); 
+        } catch (e) { setTasks(generateDefaultTasks()); }
       } else {
         const defaults = generateDefaultTasks();
         setTasks(defaults);
@@ -129,7 +132,7 @@ export const useSchedule = () => {
       if (savedRoutines) {
         try { 
           const p = JSON.parse(savedRoutines);
-          setRoutines(p.map(r => ({ ...r, exceptions: r.exceptions || {} }))); 
+          setRoutines(Array.isArray(p) ? p.map(r => ({ ...r, exceptions: r.exceptions || {} })) : defaultRoutines); 
         } catch (e) { setRoutines(defaultRoutines); }
       } else {
         setRoutines(defaultRoutines);

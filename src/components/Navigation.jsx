@@ -70,10 +70,11 @@ const Navigation = ({
   return (
     <>
       {/* Desktop Sidebar navigation & Mobile bottom bar */}
-      <nav className={`w-full md:w-64 border-t md:border-t-0 md:border-r flex md:flex-col justify-around md:justify-start items-center md:items-start p-2 md:p-4 z-40 fixed bottom-0 md:static md:h-screen transition-all duration-350 ${
+      {/* Desktop Sidebar navigation & Mobile bottom bar */}
+      <nav className={`w-full md:w-64 border-t md:border-t-0 md:border-r flex md:flex-col justify-around md:justify-start items-center md:items-start px-2 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:p-4 z-40 fixed bottom-0 md:static md:h-screen transition-all duration-350 shadow-[0_-4px_30px_rgba(0,0,0,0.2)] md:shadow-none backdrop-blur-xl ${
         adminMode 
-          ? 'bg-slate-950 border-rose-900/30' 
-          : 'bg-slate-900 border-slate-800'
+          ? 'bg-rose-950/85 md:bg-slate-950 border-rose-900/40' 
+          : 'bg-slate-950/85 md:bg-slate-900 border-slate-800/80'
       }`}>
         
         {/* Brand / Logo (Hidden on mobile) */}
@@ -209,10 +210,10 @@ const Navigation = ({
               <button
                 key={item.id}
                 onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 cursor-pointer ${
+                className={`flex flex-col items-center justify-center py-2 px-1 mx-0.5 rounded-2xl transition-all flex-1 cursor-pointer ${
                   isActive 
-                    ? (adminMode ? 'text-rose-400' : 'text-indigo-400') 
-                    : 'text-slate-500'
+                    ? (adminMode ? 'text-rose-400 bg-rose-500/15' : 'text-indigo-400 bg-indigo-500/15') 
+                    : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
                 <Icon className="w-5.5 h-5.5" />
@@ -226,8 +227,8 @@ const Navigation = ({
           {/* Mobile "More" Tab Toggle */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 cursor-pointer ${
-              isMobileMenuOpen ? (adminMode ? 'text-rose-400' : 'text-indigo-400') : 'text-slate-500'
+            className={`flex flex-col items-center justify-center py-2 px-1 mx-0.5 rounded-2xl transition-all flex-1 cursor-pointer ${
+              isMobileMenuOpen ? (adminMode ? 'text-rose-400 bg-rose-500/15' : 'text-indigo-400 bg-indigo-500/15') : 'text-slate-500 hover:text-slate-300'
             }`}
           >
             {isMobileMenuOpen ? <X className="w-5.5 h-5.5 text-rose-400" /> : <Menu className="w-5.5 h-5.5" />}
@@ -239,7 +240,7 @@ const Navigation = ({
 
       {/* Mobile Drawer Menu Popup */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 bottom-16 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800 p-5 z-[35] rounded-t-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.6)] flex flex-col gap-3.5 animate-slide-up">
+        <div className="md:hidden fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 p-5 z-[35] rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col gap-3.5 animate-slide-up">
           
           <div className="flex items-center justify-between border-b border-slate-850 pb-2.5">
             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Device Configurations</span>

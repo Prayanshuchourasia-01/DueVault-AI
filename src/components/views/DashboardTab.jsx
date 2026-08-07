@@ -90,8 +90,21 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
       });
     }
 
+    // Add custom tasks that fall within the next 7 days
+    const lastDay = new Date(today);
+    lastDay.setDate(lastDay.getDate() + 6);
+    const lastDayStr = lastDay.toLocaleDateString('en-CA');
+    
+    if (tasks && Array.isArray(tasks)) {
+      tasks.forEach(task => {
+        if (task.date >= todayStr && task.date <= lastDayStr) {
+          weekTasks.push(task);
+        }
+      });
+    }
+
     return weekTasks.sort((a, b) => new Date(a.start || a.date) - new Date(b.start || b.date));
-  }, [routines]);
+  }, [routines, tasks, todayStr]);
 
   // Filter based on UI toggle
   const upcomingWeek = useMemo(() => {
