@@ -21,7 +21,7 @@ export const Timetable = ({
   };
 
   return (
-    <div className={`bg-slate-900/40 p-5 rounded-2xl border ${accentColor} backdrop-blur-md shadow-xl flex flex-col h-fit`}>
+    <div className={`bg-slate-900/40 p-3 md:p-5 rounded-2xl border ${accentColor} backdrop-blur-md shadow-xl flex flex-col h-fit`}>
       
       {/* Timetable Header */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/80">
@@ -76,7 +76,7 @@ export const Timetable = ({
             return (
               <div 
                 key={task.id} 
-                className={`p-3 rounded-xl border border-l-[3px] transition-all duration-300 flex items-center justify-between gap-3 hover:translate-x-0.5 hover:border-slate-700/80 ${cardBorderStyle}`}
+                className={`p-2.5 md:p-3 rounded-xl border border-l-[3px] transition-all duration-300 flex items-center justify-between gap-2.5 hover:translate-x-0.5 hover:border-slate-700/80 ${cardBorderStyle}`}
               >
                 
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">

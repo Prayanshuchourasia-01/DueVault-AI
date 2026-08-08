@@ -63,17 +63,7 @@ const generateDefaultTasks = () => {
       completed: false,
       reminderDays: [7, 3, 1]
     },
-    {
-      id: 'default-4',
-      title: 'Internet & WiFi Subscription Due',
-      date: tmrwStr,
-      start: combineDateAndTime(tmrwStr, '09:00'),
-      end: combineDateAndTime(tmrwStr, '23:59'),
-      priority: 'CRITICAL',
-      category: 'finance',
-      completed: false,
-      reminderDays: [5, 1, 0]
-    },
+
     {
       id: 'default-5',
       title: 'Grocery Shopping & Meal Prep',

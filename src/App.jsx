@@ -416,7 +416,7 @@ function App() {
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden p-4 pt-24 md:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8 print:p-0 print:h-auto print:overflow-visible">
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden p-2.5 pt-20 md:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8 print:p-0 print:h-auto print:overflow-visible">
 
           {/* Admin Banner inside User View Mode */}
           {isAdmin && !adminMode && (

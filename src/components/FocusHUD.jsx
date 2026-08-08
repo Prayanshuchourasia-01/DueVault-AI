@@ -31,7 +31,7 @@ export const FocusHUD = ({ activeTask, nextTask, onToggleComplete }) => {
 
   if (!hasActive && !nextTask) {
     return (
-      <div className="bg-emerald-950/30 backdrop-blur-md p-8 rounded-2xl border border-emerald-500/30 shadow-xl shadow-emerald-950/20 text-center space-y-4 animate-fade-in w-full">
+      <div className="bg-emerald-950/30 backdrop-blur-md p-4 md:p-8 rounded-2xl border border-emerald-500/30 shadow-xl shadow-emerald-950/20 text-center space-y-4 animate-fade-in w-full">
         <div className="inline-flex p-4 bg-emerald-500/20 text-emerald-400 rounded-full animate-bounce">
           <CheckCircle className="w-12 h-12" />
         </div>
@@ -47,7 +47,7 @@ export const FocusHUD = ({ activeTask, nextTask, onToggleComplete }) => {
   }
 
   return (
-    <div className={`bg-slate-900/80 backdrop-blur-md p-8 rounded-2xl border transition-all duration-300 shadow-xl ${
+    <div className={`bg-slate-900/80 backdrop-blur-md p-4 md:p-8 rounded-2xl border transition-all duration-300 shadow-xl ${
       hasActive 
         ? (urgency === 'HIGH' ? 'border-rose-500/50 shadow-rose-900/20' : 'border-indigo-500/50 shadow-indigo-900/20')
         : 'border-slate-800'
