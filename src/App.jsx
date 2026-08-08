@@ -98,12 +98,7 @@ function App() {
     localStorage.setItem('duevault_theme', theme);
   }, [theme]);
 
-  // Fallback for mobile: redirect from dashboard to focus
-  useEffect(() => {
-    if (activeTab === 'dashboard' && window.innerWidth < 768) {
-      setActiveTab('focus');
-    }
-  }, [activeTab]);
+  // Removed mobile redirect so Dashboard is accessible on phones
 
   const {
     tasks,

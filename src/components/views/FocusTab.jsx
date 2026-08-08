@@ -95,17 +95,15 @@ const FocusTab = ({
         </div>
 
         {/* Column 2: Academic & Focus Timetable */}
-        {hasAcademic && (
-          <div className="lg:col-span-1">
-            <Timetable 
-              title="Academic & Focus" 
-              tasks={academicTasks} 
-              onToggleComplete={onToggleComplete}
-              onDeleteTask={onDeleteTask}
-              accentColor="border-cyan-500/50"
-            />
-          </div>
-        )}
+        <div className="lg:col-span-1">
+          <Timetable 
+            title="Academic & Focus" 
+            tasks={academicTasks} 
+            onToggleComplete={onToggleComplete}
+            onDeleteTask={onDeleteTask}
+            accentColor="border-cyan-500/50"
+          />
+        </div>
 
         {/* Column 3: Upcoming Bills & Reminders */}
         {hasLife && (

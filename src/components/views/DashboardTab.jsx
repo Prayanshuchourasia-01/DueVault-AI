@@ -90,19 +90,7 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
       });
     }
 
-    // Add custom tasks that fall within the next 7 days
-    const lastDay = new Date(today);
-    lastDay.setDate(lastDay.getDate() + 6);
-    const lastDayStr = lastDay.toLocaleDateString('en-CA');
-    
-    if (tasks && Array.isArray(tasks)) {
-      tasks.forEach(task => {
-        if (task.date >= todayStr && task.date <= lastDayStr) {
-          weekTasks.push(task);
-        }
-      });
-    }
-
+    // Remove custom tasks since user only wants timetable blocks here.
     return weekTasks.sort((a, b) => new Date(a.start || a.date) - new Date(b.start || b.date));
   }, [routines, tasks, todayStr]);
 
@@ -212,9 +200,7 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
         foundActive = true;
       }
 
-      const visualState = task.completed 
-        ? 'opacity-40 grayscale' 
-        : (isActiveCandidate 
+      const visualState = (isActiveCandidate 
             ? 'shadow-[0_0_20px_rgba(34,211,238,0.2)] ring-2 ring-cyan-400 scale-[1.03] z-10' 
             : 'opacity-90');
 
@@ -247,17 +233,10 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
             <span className={`text-xs font-bold px-2 py-1 bg-black/30 rounded uppercase tracking-wider border border-current/20 ${isBillOrReminder ? 'text-rose-400' : ''}`}>
               {task.category || 'TASK'}
             </span>
-            {onToggleComplete && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); onToggleComplete(task.id); }}
-                className="hover:scale-110 transition-transform cursor-pointer z-20"
-              >
-                {task.completed ? <CheckSquare className="w-6 h-6 text-emerald-400" /> : <Square className="w-6 h-6 text-current opacity-50" />}
-              </button>
-            )}
+            {/* Removed checkbox toggle for timetable blocks on dashboard */}
           </div>
           
-          <h4 className={`font-bold text-lg line-clamp-2 leading-tight mt-1 ${task.completed ? 'line-through' : ''}`}>{task.title}</h4>
+          <h4 className="font-bold text-lg line-clamp-2 leading-tight mt-1">{task.title}</h4>
           
           <div className="mt-auto pt-4 flex flex-col gap-1 text-sm font-medium opacity-80">
             <span className="font-mono">{timeDisplay}</span>
@@ -272,74 +251,12 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-24 md:pb-6 font-sans">
       
-      {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex items-center justify-between">
-        <div className="relative z-10">
-          <h2 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <div className="p-2 bg-cyan-500/20 text-cyan-400 rounded-xl">
-              <Activity className="w-6 h-6" />
-            </div>
-            Engineering Analytics HUD
-          </h2>
-          <p className="text-slate-400 mt-2">Track your deep work density vs. administrative overhead for the next 7 days.</p>
-        </div>
-        <div className="absolute top-1/2 -translate-y-1/2 right-10 opacity-10 pointer-events-none">
-          <BrainCircuit className="w-32 h-32 text-cyan-400" />
-        </div>
-      </div>
-
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex items-center gap-4 group hover:border-cyan-500/50 transition-colors">
-          <div className="p-4 bg-cyan-500/10 rounded-xl text-cyan-400 group-hover:scale-110 transition-transform">
-            <Code2 className="w-8 h-8" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Deep Work (7D)</p>
-            <p className="text-3xl font-bold text-white">{analytics.deepWorkHours} <span className="text-sm text-slate-500 font-medium">hrs</span></p>
-          </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex items-center gap-4 group hover:border-indigo-500/50 transition-colors">
-          <div className="p-4 bg-indigo-500/10 rounded-xl text-indigo-400 group-hover:scale-110 transition-transform">
-            <Briefcase className="w-8 h-8" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Admin / Chores (7D)</p>
-            <p className="text-3xl font-bold text-white">{analytics.adminHours} <span className="text-sm text-slate-500 font-medium">hrs</span></p>
-          </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex items-center gap-4">
-          <div className="p-4 bg-emerald-500/10 rounded-xl text-emerald-400">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Today's Load</p>
-            <p className="text-3xl font-bold text-white">{analytics.completedToday} <span className="text-slate-500 text-lg">/ {analytics.totalToday}</span></p>
-          </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex items-center gap-4">
-          <div className="p-4 bg-purple-500/10 rounded-xl text-purple-400">
-            <TrendingUp className="w-8 h-8" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Daily Completion</p>
-            <p className="text-3xl font-bold text-white">{analytics.completionRate}%</p>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Horizontal Scrolling Timeline */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-            <Activity className="w-4 h-4 text-cyan-400" />
-            Schedule Pipeline
+      {/* Dashboard Pipeline (Timetable Blocks) */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold tracking-wide text-white flex items-center gap-3">
+            <CalendarDays className="w-5 h-5 text-cyan-400" />
+            Timetable Pipeline
           </h3>
           
           <div className="flex gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
