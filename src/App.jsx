@@ -404,14 +404,14 @@ function App() {
         </div>
 
         {/* Fixed Mobile App Bar (Hidden on Desktop) */}
-        <div className="md:hidden fixed top-0 inset-x-0 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/60 z-40 flex items-center justify-center pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] print:hidden shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
-          <h1 className="text-lg font-black bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">
-            DueVault AI
+        <div className="md:hidden fixed top-0 inset-x-0 bg-slate-950/90 backdrop-blur-2xl border-b border-slate-800/30 z-40 flex items-center px-4 pb-2.5 pt-[calc(1rem+env(safe-area-inset-top))] print:hidden">
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            DueVault
           </h1>
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden p-2.5 pt-20 md:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8 print:p-0 print:h-auto print:overflow-visible">
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden pt-[calc(4rem+env(safe-area-inset-top))] md:p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8 print:p-0 print:h-auto print:overflow-visible">
 
           {/* Admin Banner inside User View Mode */}
           {isAdmin && !adminMode && (

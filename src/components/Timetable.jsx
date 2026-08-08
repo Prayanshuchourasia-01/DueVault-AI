@@ -21,10 +21,10 @@ export const Timetable = ({
   };
 
   return (
-    <div className={`bg-slate-900/40 p-3 md:p-5 rounded-2xl border ${accentColor} backdrop-blur-md shadow-xl flex flex-col h-fit`}>
+    <div className={`md:bg-slate-900/40 pt-1 pb-3 md:p-5 md:rounded-2xl md:border md:${accentColor} md:backdrop-blur-md md:shadow-xl flex flex-col h-fit`}>
       
       {/* Timetable Header */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/80">
+      <div className="flex items-center justify-between mb-2 md:mb-4 px-4 md:px-0 pb-2 md:pb-3 border-b border-slate-800/80">
         <div className="flex items-center gap-2">
           <div className="p-1 bg-indigo-500/10 text-indigo-400 rounded-lg border border-indigo-500/20">
             <CalendarRange className="w-4 h-4" />
@@ -36,9 +36,9 @@ export const Timetable = ({
       </div>
 
       {/* Task List */}
-      <div className="flex-1 space-y-3">
+      <div className="flex-1 md:space-y-3">
         {sortedTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center text-slate-600">
+          <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center text-slate-600">
             <Calendar className="w-8 h-8 text-slate-700 mb-2" />
             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Timeline Empty</p>
             <p className="text-xs text-slate-600 mt-1 max-w-[190px] leading-relaxed">
@@ -50,33 +50,33 @@ export const Timetable = ({
             const status = getTaskStatus(task);
             
             let statusBadgeStyle = '';
-            let cardBorderStyle = 'border-slate-800 bg-slate-900/30';
+            let cardBorderStyle = 'md:border-slate-800 bg-transparent md:bg-slate-900/30';
             
             // Premium Status styling
             if (status === 'COMPLETED') {
               statusBadgeStyle = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-              cardBorderStyle = 'border-slate-800/40 border-l-emerald-500 bg-slate-950/20 opacity-60';
+              cardBorderStyle = 'md:border-slate-800/40 md:border-l-emerald-500 bg-transparent md:bg-slate-950/20 opacity-60';
             } else if (status === 'ACTIVE') {
               statusBadgeStyle = 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30';
               
               if (task.priority === 'HIGH' || task.priority === 'CRITICAL') {
-                cardBorderStyle = 'border-slate-800/80 border-l-rose-500 bg-rose-950/10 shadow-[0_0_15px_rgba(244,63,94,0.05)]';
+                cardBorderStyle = 'md:border-slate-800/80 md:border-l-rose-500 bg-rose-950/10 shadow-[0_0_15px_rgba(244,63,94,0.05)]';
               } else {
-                cardBorderStyle = 'border-slate-800/80 border-l-cyan-500 bg-cyan-950/10 shadow-[0_0_15px_rgba(6,182,212,0.05)]';
+                cardBorderStyle = 'md:border-slate-800/80 md:border-l-cyan-500 bg-cyan-950/10 shadow-[0_0_15px_rgba(6,182,212,0.05)]';
               }
             } else if (status === 'MISSED') {
               statusBadgeStyle = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-              cardBorderStyle = 'border-slate-800/40 border-l-rose-500 bg-rose-950/5 opacity-80';
+              cardBorderStyle = 'md:border-slate-800/40 md:border-l-rose-500 bg-rose-950/5 opacity-80';
             } else {
               // UPCOMING
               statusBadgeStyle = 'bg-slate-800/80 text-slate-400 border-slate-700/60';
-              cardBorderStyle = 'border-slate-800/80 border-l-slate-700 bg-slate-900/40';
+              cardBorderStyle = 'md:border-slate-800/80 md:border-l-slate-700 bg-transparent md:bg-slate-900/40';
             }
 
             return (
               <div 
                 key={task.id} 
-                className={`p-2.5 md:p-3 rounded-xl border border-l-[3px] transition-all duration-300 flex items-center justify-between gap-2.5 hover:translate-x-0.5 hover:border-slate-700/80 ${cardBorderStyle}`}
+                className={`px-4 py-3 md:p-3 md:rounded-xl border-b border-slate-800/50 md:border md:border-l-[3px] transition-all duration-300 flex items-center justify-between gap-2.5 md:hover:translate-x-0.5 md:hover:border-slate-700/80 ${cardBorderStyle}`}
               >
                 
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">

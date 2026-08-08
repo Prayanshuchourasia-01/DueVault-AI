@@ -31,7 +31,7 @@ export const FocusHUD = ({ activeTask, nextTask, onToggleComplete }) => {
 
   if (!hasActive && !nextTask) {
     return (
-      <div className="bg-emerald-950/30 backdrop-blur-md p-4 md:p-8 rounded-2xl border border-emerald-500/30 shadow-xl shadow-emerald-950/20 text-center space-y-4 animate-fade-in w-full">
+      <div className="bg-emerald-950/20 md:bg-emerald-950/30 md:backdrop-blur-md py-10 px-4 md:p-8 md:rounded-2xl border-b md:border border-emerald-500/20 md:border-emerald-500/30 md:shadow-xl md:shadow-emerald-950/20 text-center space-y-4 animate-fade-in w-full">
         <div className="inline-flex p-4 bg-emerald-500/20 text-emerald-400 rounded-full animate-bounce">
           <CheckCircle className="w-12 h-12" />
         </div>
@@ -47,9 +47,9 @@ export const FocusHUD = ({ activeTask, nextTask, onToggleComplete }) => {
   }
 
   return (
-    <div className={`bg-slate-900/80 backdrop-blur-md p-4 md:p-8 rounded-2xl border transition-all duration-300 shadow-xl ${
+    <div className={`md:bg-slate-900/80 md:backdrop-blur-md pt-2 pb-6 px-4 md:p-8 md:rounded-2xl border-b md:border transition-all duration-300 md:shadow-xl ${
       hasActive 
-        ? (urgency === 'HIGH' ? 'border-rose-500/50 shadow-rose-900/20' : 'border-indigo-500/50 shadow-indigo-900/20')
+        ? (urgency === 'HIGH' ? 'border-rose-500/30 md:border-rose-500/50 md:shadow-rose-900/20 bg-rose-950/10 md:bg-slate-900/80' : 'border-indigo-500/30 md:border-indigo-500/50 md:shadow-indigo-900/20 bg-indigo-950/10 md:bg-slate-900/80')
         : 'border-slate-800'
     }`}>
       

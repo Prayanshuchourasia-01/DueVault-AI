@@ -71,10 +71,10 @@ const Navigation = ({
     <>
       {/* Desktop Sidebar navigation & Mobile bottom bar */}
       {/* Desktop Sidebar navigation & Mobile bottom bar */}
-      <nav className={`w-full md:w-64 border-t md:border-t-0 md:border-r flex md:flex-col justify-around md:justify-start items-center md:items-start px-2 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:p-4 z-40 fixed bottom-0 md:static md:h-screen transition-all duration-350 shadow-[0_-4px_30px_rgba(0,0,0,0.2)] md:shadow-none backdrop-blur-xl ${
+      <nav className={`w-full md:w-64 border-t md:border-t-0 md:border-r flex md:flex-col justify-around md:justify-start items-center md:items-start pt-2 pb-[calc(env(safe-area-inset-bottom))] md:p-4 z-40 fixed bottom-0 md:static md:h-screen transition-all duration-350 shadow-[0_-4px_30px_rgba(0,0,0,0.2)] md:shadow-none backdrop-blur-2xl ${
         adminMode 
-          ? 'bg-rose-950/85 md:bg-slate-950 border-rose-900/40' 
-          : 'bg-slate-950/85 md:bg-slate-900 border-slate-800/80'
+          ? 'bg-rose-950/90 md:bg-slate-950 border-rose-900/40' 
+          : 'bg-slate-950/90 md:bg-slate-900 border-slate-800/80'
       }`}>
         
         {/* Brand / Logo (Hidden on mobile) */}
@@ -202,7 +202,7 @@ const Navigation = ({
         </div>
 
         {/* Mobile Horizontal Bottom Menu */}
-        <div className="flex md:hidden w-full justify-between items-center px-1">
+        <div className="flex md:hidden w-full justify-around items-center px-2">
           {mainNavItems.filter(item => item.id !== 'dashboard').slice(0, 4).map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id && !isMobileMenuOpen;
@@ -210,14 +210,14 @@ const Navigation = ({
               <button
                 key={item.id}
                 onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
-                className={`flex flex-col items-center justify-center py-2 px-1 mx-0.5 rounded-2xl transition-all flex-1 cursor-pointer ${
+                className={`flex flex-col items-center justify-center py-2 transition-all flex-1 cursor-pointer ${
                   isActive 
-                    ? (adminMode ? 'text-rose-400 bg-rose-500/15' : 'text-indigo-400 bg-indigo-500/15') 
+                    ? (adminMode ? 'text-rose-400' : 'text-indigo-400') 
                     : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
-                <Icon className="w-5.5 h-5.5" />
-                <span className="text-[9px] font-bold mt-1 tracking-tight truncate max-w-[55px]">
+                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]' : ''}`} />
+                <span className="text-[10px] font-medium tracking-tight truncate max-w-[55px]">
                   {item.label.split(' ')[0]}
                 </span>
               </button>
@@ -227,12 +227,12 @@ const Navigation = ({
           {/* Mobile "More" Tab Toggle */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`flex flex-col items-center justify-center py-2 px-1 mx-0.5 rounded-2xl transition-all flex-1 cursor-pointer ${
-              isMobileMenuOpen ? (adminMode ? 'text-rose-400 bg-rose-500/15' : 'text-indigo-400 bg-indigo-500/15') : 'text-slate-500 hover:text-slate-300'
+            className={`flex flex-col items-center justify-center py-2 transition-all flex-1 cursor-pointer ${
+              isMobileMenuOpen ? (adminMode ? 'text-rose-400' : 'text-indigo-400') : 'text-slate-500 hover:text-slate-300'
             }`}
           >
-            {isMobileMenuOpen ? <X className="w-5.5 h-5.5 text-rose-400" /> : <Menu className="w-5.5 h-5.5" />}
-            <span className="text-[9px] font-bold mt-1 tracking-tight">{isMobileMenuOpen ? 'Close' : 'More'}</span>
+            {isMobileMenuOpen ? <X className="w-6 h-6 mb-1 text-rose-400" /> : <Menu className="w-6 h-6 mb-1" />}
+            <span className="text-[10px] font-medium tracking-tight">{isMobileMenuOpen ? 'Close' : 'More'}</span>
           </button>
         </div>
 
