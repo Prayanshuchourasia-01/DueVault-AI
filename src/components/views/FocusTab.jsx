@@ -80,11 +80,10 @@ const FocusTab = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-7xl mx-auto">
         
-        {/* Column 1: Focus HUD & Pomodoro & Alarm */}
+        {/* Column 1: Focus HUD & Pomodoro Timer */}
         <div className="lg:col-span-1 space-y-6 flex flex-col">
           <FocusHUD activeTask={activeTask} nextTask={nextTask} onToggleComplete={onToggleComplete} />
           <PomodoroTimer startAlarm={startAlarm} sendNotification={sendNotification} />
-          <AlarmWidget startAlarm={startAlarm} />
         </div>
 
         {/* Column 2: Academic & Focus Timetable */}

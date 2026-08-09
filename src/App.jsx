@@ -556,6 +556,7 @@ function App() {
             <SettingsTab
               onTasksExtracted={(extractedTasks) => extractedTasks.forEach(t => addRoutine(t))}
               clearRoutines={clearRoutines}
+              startAlarm={startAlarm}
             />
           )}
 

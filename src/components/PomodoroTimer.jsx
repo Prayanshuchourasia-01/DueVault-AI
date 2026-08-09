@@ -67,11 +67,9 @@ export const PomodoroTimer = ({ startAlarm, sendNotification }) => {
   useEffect(() => {
     if (!isRunning || timeLeft > 0) return;
 
-    // Current segment finished
     const segment = queue[currentIndex];
     if (!segment) return;
 
-    // Fire notification/alarm
     const tone = localStorage.getItem('duevault_ringtone') || 'modern-chime';
     if (segment.type === 'WORK') {
       if (currentIndex + 1 < queue.length) {
@@ -92,7 +90,6 @@ export const PomodoroTimer = ({ startAlarm, sendNotification }) => {
       sendNotification?.("Back to Work!", msg);
     }
 
-    // Advance to next segment
     const nextIdx = currentIndex + 1;
     if (nextIdx < queue.length) {
       setCurrentIndex(nextIdx);
@@ -158,8 +155,9 @@ export const PomodoroTimer = ({ startAlarm, sendNotification }) => {
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
       <div className={`absolute top-0 left-0 w-full h-1 ${isWork ? 'bg-cyan-500' : 'bg-emerald-500'}`} />
       
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-white flex items-center gap-2">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-bold text-white flex items-center gap-2 text-base">
           {isWork ? <BrainCircuit className="w-5 h-5 text-cyan-400" /> : <Coffee className="w-5 h-5 text-emerald-400" />}
           Pomodoro Timer
         </h3>
@@ -233,18 +231,18 @@ export const PomodoroTimer = ({ startAlarm, sendNotification }) => {
       )}
 
       {/* Session Timeline */}
-      <div className="flex items-center gap-0.5 mb-4">
+      <div className="flex items-center gap-1.5 mb-6">
         {queue.map((seg, i) => {
           const isActive = i === currentIndex;
           const isDone = i < currentIndex;
           return (
             <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div className={`h-1.5 w-full rounded-full transition-all ${
+              <div className={`h-2 w-full rounded-full transition-all ${
                 isDone ? (seg.type === 'WORK' ? 'bg-cyan-500' : 'bg-emerald-500')
-                  : isActive ? (seg.type === 'WORK' ? 'bg-cyan-500/50' : 'bg-emerald-500/50')
+                  : isActive ? (seg.type === 'WORK' ? 'bg-cyan-500/70 shadow-[0_0_8px_#06b6d4]' : 'bg-emerald-500/70 shadow-[0_0_8px_#10b981]')
                   : 'bg-slate-800'
               }`} />
-              <span className={`text-[8px] font-bold uppercase tracking-wider ${
+              <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${
                 isActive ? (seg.type === 'WORK' ? 'text-cyan-400' : 'text-emerald-400')
                   : isDone ? 'text-slate-500' : 'text-slate-700'
               }`}>
@@ -256,42 +254,44 @@ export const PomodoroTimer = ({ startAlarm, sendNotification }) => {
       </div>
 
       {/* Current Segment Label */}
-      <div className="text-center mb-2">
-        <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
-          isComplete ? 'bg-emerald-500/20 text-emerald-400' : isWork ? 'bg-cyan-500/20 text-cyan-400' : 'bg-emerald-500/20 text-emerald-400'
+      <div className="text-center mb-4">
+        <span className={`text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full ${
+          isComplete ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : isWork ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
         }`}>
           {isComplete ? '✓ Session Complete' : currentSegment?.label || 'Ready'}
         </span>
       </div>
 
       {/* Timer Display */}
-      <div className="flex flex-col items-center justify-center py-4">
-        <div className={`text-5xl md:text-6xl font-mono font-black tracking-tight leading-none drop-shadow-md my-4 text-center ${
+      <div className="flex flex-col items-center justify-center py-4 px-2 space-y-5">
+        <div className={`text-5xl md:text-6xl font-mono font-black tracking-tight leading-none drop-shadow-md text-center ${
           isComplete ? 'text-emerald-400' : isWork ? 'text-cyan-400' : 'text-emerald-400'
         }`}>
           {isComplete ? '00:00' : formatTime(timeLeft)}
         </div>
 
-        <div className="w-full max-w-xs bg-slate-800 rounded-full h-2 mb-2">
-          <div 
-            className={`h-full rounded-full transition-all duration-1000 ${isWork ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`}
-            style={{ width: `${Math.max(0, Math.min(100, progressPercent))}%` }}
-          />
+        <div className="w-full max-w-xs space-y-2.5">
+          <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-750">
+            <div 
+              className={`h-full rounded-full transition-all duration-1000 ${isWork ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`}
+              style={{ width: `${Math.max(0, Math.min(100, progressPercent))}%` }}
+            />
+          </div>
+
+          <div className="w-full bg-slate-850 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="h-full rounded-full bg-indigo-500/60 transition-all duration-1000"
+              style={{ width: `${Math.max(0, Math.min(100, overallProgress))}%` }}
+            />
+          </div>
         </div>
 
-        <div className="w-full max-w-xs bg-slate-800/50 rounded-full h-1 mb-6">
-          <div 
-            className="h-full rounded-full bg-indigo-500/60 transition-all duration-1000"
-            style={{ width: `${Math.max(0, Math.min(100, overallProgress))}%` }}
-          />
-        </div>
-
-        {/* Controls — always visible */}
-        <div className="flex gap-3">
+        {/* Controls — spacious and unblocked */}
+        <div className="flex items-center justify-center gap-5 pt-3">
           <button 
             onClick={isRunning ? handlePause : handlePlay}
             className={`w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-              isRunning ? 'bg-slate-800 text-amber-400 hover:bg-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)]'
+              isRunning ? 'bg-slate-800 text-amber-400 border border-amber-500/30 hover:bg-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)]'
             }`}
             title={isRunning ? 'Pause' : (isComplete ? 'Restart' : 'Start')}
           >
@@ -300,7 +300,7 @@ export const PomodoroTimer = ({ startAlarm, sendNotification }) => {
 
           <button 
             onClick={handleStop}
-            className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-800 text-rose-400 hover:bg-slate-700 hover:text-rose-300 transition-all cursor-pointer"
+            className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-800 text-rose-400 border border-rose-500/20 hover:bg-slate-700 hover:text-rose-300 transition-all cursor-pointer"
             title="Stop & Reset"
           >
             <Square className="w-5 h-5 fill-current" />
@@ -308,7 +308,7 @@ export const PomodoroTimer = ({ startAlarm, sendNotification }) => {
 
           <button 
             onClick={handleReset}
-            className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-all cursor-pointer"
+            className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 hover:text-white transition-all cursor-pointer"
             title="Reset Current Segment"
           >
             <RotateCcw className="w-5 h-5" />

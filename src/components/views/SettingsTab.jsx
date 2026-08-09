@@ -6,7 +6,9 @@ import HTMLImporter from '../HTMLImporter';
 import { auth, db } from '../../utils/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
-const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
+import { AlarmWidget } from '../AlarmWidget';
+
+const SettingsTab = ({ onTasksExtracted, clearRoutines, startAlarm }) => {
   const [apiKey, setApiKey] = useState('');
   const [ringtone, setRingtone] = useState('modern-chime');
   const [savedMessage, setSavedMessage] = useState('');
@@ -272,6 +274,9 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines }) => {
               </label>
             </div>
           </div>
+
+          {/* Custom Alarms Panel */}
+          <AlarmWidget startAlarm={startAlarm} />
 
           {/* HTML Importer Panel */}
           <HTMLImporter onTasksExtracted={onTasksExtracted} clearRoutines={clearRoutines} />

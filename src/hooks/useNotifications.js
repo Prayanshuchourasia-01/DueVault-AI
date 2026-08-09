@@ -22,13 +22,38 @@ const playNotificationChime = () => {
 };
 
 export const useNotifications = () => {
-  const [permission, setPermission] = useState('default');
+  const [permission, setPermission] = useState(() => ('Notification' in window ? Notification.permission : 'denied'));
 
-  useEffect(() => {
+  const checkPermission = useCallback(() => {
     if ('Notification' in window) {
-      setPermission(Notification.permission);
+      const current = Notification.permission;
+      setPermission(current);
+
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'notifications' })
+          .then(status => {
+            setPermission(status.state === 'granted' ? 'granted' : (status.state === 'denied' ? 'denied' : 'default'));
+            status.onchange = () => {
+              setPermission(status.state === 'granted' ? 'granted' : (status.state === 'denied' ? 'denied' : 'default'));
+            };
+          })
+          .catch(() => {});
+      }
     }
   }, []);
+
+  useEffect(() => {
+    checkPermission();
+
+    const handleFocus = () => checkPermission();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [checkPermission]);
 
   const sendNotification = useCallback((title, body) => {
     // 1. Play pleasant notification chime
