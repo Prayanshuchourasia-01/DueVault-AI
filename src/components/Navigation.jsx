@@ -203,7 +203,7 @@ const Navigation = ({
 
         {/* Mobile Horizontal Bottom Menu */}
         <div className="flex md:hidden w-full justify-around items-center px-2">
-          {mainNavItems.filter(item => item.id !== 'dashboard').slice(0, 4).map(item => {
+          {mainNavItems.slice(0, 4).map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id && !isMobileMenuOpen;
             return (

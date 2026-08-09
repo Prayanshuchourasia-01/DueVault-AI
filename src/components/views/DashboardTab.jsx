@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Activity, CheckCircle2, TrendingUp, Clock, Code2, Briefcase, BrainCircuit, CheckSquare, Square, Filter } from 'lucide-react';
+import { Activity, CheckCircle2, TrendingUp, Clock, Code2, Briefcase, BrainCircuit, CheckSquare, Square, Filter, CalendarDays } from 'lucide-react';
 import { combineDateAndTime } from '../../utils/timeUtils';
 
 // Drag-to-Scroll Hook
