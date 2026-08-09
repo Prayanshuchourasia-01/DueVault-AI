@@ -15,7 +15,8 @@ const FocusTab = ({
   onAddTask, 
   onToggleComplete, 
   onDeleteTask,
-  startAlarm
+  startAlarm,
+  sendNotification
 }) => {
   
   // Filter for today only
@@ -31,10 +32,9 @@ const FocusTab = ({
     'research', 'learning', 'course', 'test', 'quiz'
   ];
 
-  // 1. Academic & Focus: Today's upcoming routine & academic tasks (Limit to Next 5)
-  let academicTasks = allTodayItems
-    .filter(t => t.isRoutine || academicCategories.includes(t.category?.toLowerCase()))
-    .filter(t => t.id !== activeTask?.id && new Date(t.end) > nowTime)
+  // 1. Academic & Focus: Today's upcoming timetable routine blocks only (not vault/bill tasks)
+  let academicTasks = todaysRoutines
+    .filter(t => !t.completed && t.id !== activeTask?.id && new Date(t.end) > nowTime)
     .sort((a, b) => new Date(a.start) - new Date(b.start))
     .slice(0, 5);
 
@@ -90,7 +90,7 @@ const FocusTab = ({
         {/* Column 1: Focus HUD & Pomodoro & Alarm */}
         <div className="lg:col-span-1 space-y-6 flex flex-col">
           <FocusHUD activeTask={activeTask} nextTask={nextTask} onToggleComplete={onToggleComplete} />
-          <PomodoroTimer startAlarm={startAlarm} />
+          <PomodoroTimer startAlarm={startAlarm} sendNotification={sendNotification} />
           <AlarmWidget startAlarm={startAlarm} />
         </div>
 

@@ -18,7 +18,8 @@ import {
   Terminal,
   Globe,
   LayoutGrid,
-  StickyNote
+  StickyNote,
+  History
 } from 'lucide-react';
 
 const Navigation = ({ 
@@ -41,7 +42,8 @@ const Navigation = ({
     { id: 'timetable', icon: CalendarClock, label: 'Timetable' },
     { id: 'vault', icon: Vault, label: 'Vault' },
     { id: 'finances', icon: Wallet, label: 'Finances' },
-    { id: 'notes', icon: StickyNote, label: 'Notes' }
+    { id: 'notes', icon: StickyNote, label: 'Notes' },
+    { id: 'history', icon: History, label: 'Audit & History' }
   ];
 
   // Admin Space Sidebar Items
@@ -272,7 +274,7 @@ const Navigation = ({
 
           {/* Remaining Nav Items (Overflow) */}
           <div className="flex flex-col gap-2">
-            {mainNavItems.filter(item => item.id !== 'dashboard').slice(4).map(item => {
+            {mainNavItems.slice(4).map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (

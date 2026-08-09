@@ -27,12 +27,6 @@ export const useNotifications = () => {
   useEffect(() => {
     if ('Notification' in window) {
       setPermission(Notification.permission);
-      // Auto-request permission if still default
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().then(p => {
-          setPermission(p);
-        });
-      }
     }
   }, []);
 

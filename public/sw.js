@@ -1,4 +1,4 @@
-const CACHE_NAME = 'duevault-cache-v3';
+const CACHE_NAME = 'duevault-cache-v5';
 const ASSETS = [
   '/',
   '/index.html',

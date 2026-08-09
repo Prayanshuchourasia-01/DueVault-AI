@@ -233,10 +233,18 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
             <span className={`text-xs font-bold px-2 py-1 bg-black/30 rounded uppercase tracking-wider border border-current/20 ${isBillOrReminder ? 'text-rose-400' : ''}`}>
               {task.category || 'TASK'}
             </span>
-            {/* Removed checkbox toggle for timetable blocks on dashboard */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleComplete(task.id); }}
+              className="p-1 rounded hover:bg-black/30 transition-colors cursor-pointer text-slate-400 hover:text-white"
+              title={task.completed ? "Mark incomplete" : "Mark complete"}
+            >
+              {task.completed ? <CheckSquare className="w-5 h-5 text-emerald-400" /> : <Square className="w-5 h-5" />}
+            </button>
           </div>
           
-          <h4 className="font-bold text-lg line-clamp-2 leading-tight mt-1">{task.title}</h4>
+          <h4 className={`font-bold text-lg line-clamp-2 leading-tight mt-1 ${task.completed ? 'line-through opacity-60' : ''}`}>
+            {task.title}
+          </h4>
           
           <div className="mt-auto pt-4 flex flex-col gap-1 text-sm font-medium opacity-80">
             <span className="font-mono">{timeDisplay}</span>

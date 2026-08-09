@@ -235,9 +235,8 @@ export const useSchedule = () => {
     
     setTodaysRoutines(todaysRoutines);
 
-    // Active Focus HUD candidates include both timetable routines AND today's scheduled tasks
-    const todayTasks = tasks.filter(t => t.date === todayDateStr);
-    const allActiveCandidates = [...todaysRoutines, ...todayTasks];
+    // Active Focus HUD candidates: ONLY timetable routine blocks (not vault/bill tasks)
+    const allActiveCandidates = [...todaysRoutines];
 
     const sortedTasks = allActiveCandidates.sort((a, b) => {
       const timeA = a.start ? new Date(a.start).getTime() : 0;

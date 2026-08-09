@@ -1,61 +1,144 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Coffee, BrainCircuit, Settings2, X } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Play, Pause, Square, RotateCcw, Coffee, BrainCircuit, Settings2, X, ChevronRight } from 'lucide-react';
+import { auth } from '../utils/firebase';
 
-export const PomodoroTimer = ({ startAlarm }) => {
-  const [customFocusMin, setCustomFocusMin] = useState(30);
-  const [customRestMin, setCustomRestMin] = useState(2);
-  const [showSettings, setShowSettings] = useState(false);
+const STORAGE_KEY = () => {
+  const user = auth.currentUser;
+  return user ? `duevault_pomodoro_${user.uid}` : 'duevault_pomodoro_guest';
+};
 
-  // Dynamic durations based on custom settings
-  const FOCUS_TIME = customFocusMin * 60;
-  const REST_TIME = customRestMin * 60;
+const loadConfig = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY());
+    if (saved) return JSON.parse(saved);
+  } catch (e) {}
+  return { focusMin: 25, breakMin: 5, breakCount: 1 };
+};
 
-  const [timeLeft, setTimeLeft] = useState(FOCUS_TIME);
-  const [isRunning, setIsRunning] = useState(false);
-  const [mode, setMode] = useState('FOCUS'); // 'FOCUS' or 'REST'
+const saveConfig = (config) => {
+  try { localStorage.setItem(STORAGE_KEY(), JSON.stringify(config)); } catch (e) {}
+};
 
-  useEffect(() => {
-    let interval = null;
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => setTimeLeft(t => t - 1), 1000);
-    } else if (isRunning && timeLeft === 0) {
-      // Phase Complete
-      const tone = localStorage.getItem('duevault_ringtone') || 'modern-chime';
-      startAlarm(tone, {
-        title: mode === 'FOCUS' ? "FOCUS PHASE COMPLETE" : "REST PHASE COMPLETE",
-        message: mode === 'FOCUS' ? "Great job. Time to take a short break." : "Break is over. Get ready to focus."
-      });
-      
-      // Auto-switch mode
-      if (mode === 'FOCUS') {
-        setMode('REST');
-        setTimeLeft(REST_TIME);
-      } else {
-        setMode('FOCUS');
-        setTimeLeft(FOCUS_TIME);
-        setIsRunning(false); // Stop after a full cycle
-      }
+// Build session queue: [WORK, BREAK, WORK, BREAK, ..., WORK]
+const buildQueue = (focusMin, breakMin, breakCount) => {
+  const totalBreaks = Math.max(0, breakCount);
+  const workBlocks = totalBreaks + 1;
+  const workSecondsPerBlock = Math.round((focusMin * 60) / workBlocks);
+  const breakSeconds = breakMin * 60;
+
+  const queue = [];
+  for (let i = 0; i < workBlocks; i++) {
+    queue.push({ type: 'WORK', duration: workSecondsPerBlock, label: `Focus ${i + 1}/${workBlocks}` });
+    if (i < totalBreaks) {
+      queue.push({ type: 'BREAK', duration: breakSeconds, label: `Break ${i + 1}/${totalBreaks}` });
     }
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft, mode, startAlarm, FOCUS_TIME, REST_TIME]);
+  }
+  return queue;
+};
 
-  const toggleTimer = () => setIsRunning(!isRunning);
-  
-  const resetTimer = () => {
-    setIsRunning(false);
-    setTimeLeft(mode === 'FOCUS' ? FOCUS_TIME : REST_TIME);
+export const PomodoroTimer = ({ startAlarm, sendNotification }) => {
+  const [config, setConfig] = useState(loadConfig);
+  const [showSettings, setShowSettings] = useState(false);
+  const [queue, setQueue] = useState(() => buildQueue(config.focusMin, config.breakMin, config.breakCount));
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const q = buildQueue(config.focusMin, config.breakMin, config.breakCount);
+    return q.length > 0 ? q[0].duration : 0;
+  });
+  const [isRunning, setIsRunning] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+
+  const intervalRef = useRef(null);
+
+  const currentSegment = queue[currentIndex] || null;
+  const isWork = currentSegment?.type === 'WORK';
+
+  // Tick every second
+  useEffect(() => {
+    if (isRunning && timeLeft > 0) {
+      intervalRef.current = setInterval(() => setTimeLeft(t => t - 1), 1000);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [isRunning, timeLeft > 0]);
+
+  // Handle segment completion
+  useEffect(() => {
+    if (!isRunning || timeLeft > 0) return;
+
+    // Current segment finished
+    const segment = queue[currentIndex];
+    if (!segment) return;
+
+    // Fire notification/alarm
+    const tone = localStorage.getItem('duevault_ringtone') || 'modern-chime';
+    if (segment.type === 'WORK') {
+      if (currentIndex + 1 < queue.length) {
+        const msg = "Great focus! Time for a break. Relax and recharge.";
+        startAlarm?.(tone, { title: "FOCUS COMPLETE — BREAK TIME", message: msg });
+        sendNotification?.("Break Time!", msg);
+      } else {
+        const msg = "All focus blocks and breaks are done. Excellent session!";
+        startAlarm?.(tone, { title: "SESSION COMPLETE", message: msg });
+        sendNotification?.("Session Complete!", msg);
+        setIsRunning(false);
+        setIsComplete(true);
+        return;
+      }
+    } else {
+      const msg = "Break is over. Time to get back to focused work!";
+      startAlarm?.(tone, { title: "BREAK OVER — BACK TO WORK", message: msg });
+      sendNotification?.("Back to Work!", msg);
+    }
+
+    // Advance to next segment
+    const nextIdx = currentIndex + 1;
+    if (nextIdx < queue.length) {
+      setCurrentIndex(nextIdx);
+      setTimeLeft(queue[nextIdx].duration);
+    } else {
+      setIsRunning(false);
+      setIsComplete(true);
+    }
+  }, [timeLeft, isRunning]);
+
+  const handlePlay = () => {
+    if (isComplete) {
+      const newQueue = buildQueue(config.focusMin, config.breakMin, config.breakCount);
+      setQueue(newQueue);
+      setCurrentIndex(0);
+      setTimeLeft(newQueue[0]?.duration || 0);
+      setIsComplete(false);
+    }
+    setIsRunning(true);
   };
 
-  const switchMode = (newMode) => {
-    setMode(newMode);
-    setTimeLeft(newMode === 'FOCUS' ? FOCUS_TIME : REST_TIME);
+  const handlePause = () => setIsRunning(false);
+
+  const handleStop = () => {
     setIsRunning(false);
+    setCurrentIndex(0);
+    const newQueue = buildQueue(config.focusMin, config.breakMin, config.breakCount);
+    setQueue(newQueue);
+    setTimeLeft(newQueue[0]?.duration || 0);
+    setIsComplete(false);
   };
 
-  const applyCustomSettings = () => {
+  const handleReset = () => {
+    setIsRunning(false);
+    setTimeLeft(currentSegment?.duration || 0);
+  };
+
+  const applySettings = () => {
+    saveConfig(config);
+    const newQueue = buildQueue(config.focusMin, config.breakMin, config.breakCount);
+    setQueue(newQueue);
+    setCurrentIndex(0);
+    setTimeLeft(newQueue[0]?.duration || 0);
+    setIsRunning(false);
+    setIsComplete(false);
     setShowSettings(false);
-    setTimeLeft(mode === 'FOCUS' ? customFocusMin * 60 : customRestMin * 60);
-    setIsRunning(false);
   };
 
   const formatTime = (seconds) => {
@@ -64,116 +147,174 @@ export const PomodoroTimer = ({ startAlarm }) => {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const totalTime = mode === 'FOCUS' ? FOCUS_TIME : REST_TIME;
+  const totalTime = currentSegment?.duration || 1;
   const progressPercent = ((totalTime - timeLeft) / totalTime) * 100;
+
+  const totalSessionSec = queue.reduce((sum, s) => sum + s.duration, 0);
+  const elapsedSec = queue.slice(0, currentIndex).reduce((sum, s) => sum + s.duration, 0) + (totalTime - timeLeft);
+  const overallProgress = totalSessionSec > 0 ? (elapsedSec / totalSessionSec) * 100 : 0;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-      {/* Background Accents */}
-      <div className={`absolute top-0 left-0 w-full h-1 ${mode === 'FOCUS' ? 'bg-cyan-500' : 'bg-emerald-500'}`} />
+      <div className={`absolute top-0 left-0 w-full h-1 ${isWork ? 'bg-cyan-500' : 'bg-emerald-500'}`} />
       
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-bold text-white flex items-center gap-2">
-          {mode === 'FOCUS' ? <BrainCircuit className="w-5 h-5 text-cyan-400" /> : <Coffee className="w-5 h-5 text-emerald-400" />}
-          Paradroma Timer
+          {isWork ? <BrainCircuit className="w-5 h-5 text-cyan-400" /> : <Coffee className="w-5 h-5 text-emerald-400" />}
+          Pomodoro Timer
         </h3>
         
-        <div className="flex bg-slate-800 rounded-lg p-1 items-center">
-          <button 
-            onClick={() => switchMode('FOCUS')}
-            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === 'FOCUS' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}
-          >
-            Focus ({customFocusMin}m)
-          </button>
-          <button 
-            onClick={() => switchMode('REST')}
-            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${mode === 'REST' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}
-          >
-            Rest ({customRestMin}m)
-          </button>
-          <button 
-            onClick={() => setShowSettings(!showSettings)}
-            className={`ml-2 p-1.5 rounded-md transition-all ${showSettings ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
-            title="Custom Timer Settings"
-          >
-            <Settings2 className="w-4 h-4" />
-          </button>
-        </div>
+        <button 
+          onClick={() => setShowSettings(!showSettings)}
+          className={`p-2 rounded-lg transition-all cursor-pointer ${showSettings ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+          title="Timer Settings"
+        >
+          <Settings2 className="w-4 h-4" />
+        </button>
       </div>
 
       {showSettings && (
         <div className="mb-6 p-4 bg-slate-950/50 border border-slate-800 rounded-xl relative animate-in fade-in slide-in-from-top-2">
-          <button onClick={() => setShowSettings(false)} className="absolute top-2 right-2 text-slate-500 hover:text-slate-300">
+          <button onClick={() => setShowSettings(false)} className="absolute top-2 right-2 text-slate-500 hover:text-slate-300 cursor-pointer">
             <X className="w-4 h-4" />
           </button>
-          <h4 className="text-xs font-bold text-indigo-400 mb-3 uppercase tracking-wider">Custom Timer Durations</h4>
-          <div className="grid grid-cols-2 gap-4">
+          <h4 className="text-xs font-bold text-indigo-400 mb-3 uppercase tracking-wider">Smart Session Planner</h4>
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Focus Time (min)</label>
+              <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Focus (min)</label>
               <input 
-                type="number" 
-                min="1" 
-                max="120"
-                value={customFocusMin}
-                onChange={e => setCustomFocusMin(Math.max(1, parseInt(e.target.value) || 1))}
+                type="number" min="5" max="180"
+                value={config.focusMin}
+                onChange={e => setConfig(c => ({ ...c, focusMin: Math.max(5, parseInt(e.target.value) || 5) }))}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
               />
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Rest Time (min)</label>
+              <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Breaks</label>
               <input 
-                type="number" 
-                min="1" 
-                max="60"
-                value={customRestMin}
-                onChange={e => setCustomRestMin(Math.max(1, parseInt(e.target.value) || 1))}
+                type="number" min="0" max="10"
+                value={config.breakCount}
+                onChange={e => setConfig(c => ({ ...c, breakCount: Math.max(0, parseInt(e.target.value) || 0) }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Break (min)</label>
+              <input 
+                type="number" min="1" max="30"
+                value={config.breakMin}
+                onChange={e => setConfig(c => ({ ...c, breakMin: Math.max(1, parseInt(e.target.value) || 1) }))}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
+          
+          <div className="mt-3 p-2 bg-slate-900/60 rounded-lg border border-slate-800">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">Session Preview</p>
+            <div className="flex items-center gap-1 flex-wrap">
+              {buildQueue(config.focusMin, config.breakMin, config.breakCount).map((seg, i, arr) => (
+                <div key={i} className="flex items-center gap-1">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${seg.type === 'WORK' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                    {Math.round(seg.duration / 60)}m
+                  </span>
+                  {i < arr.length - 1 && <ChevronRight className="w-3 h-3 text-slate-600" />}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <button 
-            onClick={applyCustomSettings}
-            className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-xs transition-all"
+            onClick={applySettings}
+            className="w-full mt-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-xs transition-all cursor-pointer"
           >
-            Apply Durations
+            Apply & Reset Timer
           </button>
         </div>
       )}
 
-      <div className="flex flex-col items-center justify-center py-6">
-        <div className={`text-6xl font-mono font-extrabold tracking-widest ${mode === 'FOCUS' ? 'text-cyan-400' : 'text-emerald-400'} drop-shadow-md mb-6`}>
-          {formatTime(timeLeft)}
+      {/* Session Timeline */}
+      <div className="flex items-center gap-0.5 mb-4">
+        {queue.map((seg, i) => {
+          const isActive = i === currentIndex;
+          const isDone = i < currentIndex;
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div className={`h-1.5 w-full rounded-full transition-all ${
+                isDone ? (seg.type === 'WORK' ? 'bg-cyan-500' : 'bg-emerald-500')
+                  : isActive ? (seg.type === 'WORK' ? 'bg-cyan-500/50' : 'bg-emerald-500/50')
+                  : 'bg-slate-800'
+              }`} />
+              <span className={`text-[8px] font-bold uppercase tracking-wider ${
+                isActive ? (seg.type === 'WORK' ? 'text-cyan-400' : 'text-emerald-400')
+                  : isDone ? 'text-slate-500' : 'text-slate-700'
+              }`}>
+                {seg.type === 'WORK' ? 'W' : 'B'}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Current Segment Label */}
+      <div className="text-center mb-2">
+        <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
+          isComplete ? 'bg-emerald-500/20 text-emerald-400' : isWork ? 'bg-cyan-500/20 text-cyan-400' : 'bg-emerald-500/20 text-emerald-400'
+        }`}>
+          {isComplete ? '✓ Session Complete' : currentSegment?.label || 'Ready'}
+        </span>
+      </div>
+
+      {/* Timer Display */}
+      <div className="flex flex-col items-center justify-center py-4">
+        <div className={`text-6xl font-mono font-extrabold tracking-widest drop-shadow-md mb-4 ${
+          isComplete ? 'text-emerald-400' : isWork ? 'text-cyan-400' : 'text-emerald-400'
+        }`}>
+          {isComplete ? '00:00' : formatTime(timeLeft)}
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full max-w-xs bg-slate-800 rounded-full h-2 mb-8">
+        <div className="w-full max-w-xs bg-slate-800 rounded-full h-2 mb-2">
           <div 
-            className={`h-full rounded-full transition-all duration-1000 ${mode === 'FOCUS' ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`}
+            className={`h-full rounded-full transition-all duration-1000 ${isWork ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`}
             style={{ width: `${Math.max(0, Math.min(100, progressPercent))}%` }}
           />
         </div>
 
-        {/* Controls */}
-        <div className="flex gap-4">
+        <div className="w-full max-w-xs bg-slate-800/50 rounded-full h-1 mb-6">
+          <div 
+            className="h-full rounded-full bg-indigo-500/60 transition-all duration-1000"
+            style={{ width: `${Math.max(0, Math.min(100, overallProgress))}%` }}
+          />
+        </div>
+
+        {/* Controls — always visible */}
+        <div className="flex gap-3">
           <button 
-            onClick={toggleTimer}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
-              isRunning 
-                ? 'bg-slate-800 text-red-400 hover:bg-slate-700' 
-                : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)]'
+            onClick={isRunning ? handlePause : handlePlay}
+            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+              isRunning ? 'bg-slate-800 text-amber-400 hover:bg-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)]'
             }`}
+            title={isRunning ? 'Pause' : (isComplete ? 'Restart' : 'Start')}
           >
             {isRunning ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
           </button>
+
           <button 
-            onClick={resetTimer}
-            className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-all"
+            onClick={handleStop}
+            className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-800 text-rose-400 hover:bg-slate-700 hover:text-rose-300 transition-all cursor-pointer"
+            title="Stop & Reset"
           >
-            <RotateCcw className="w-6 h-6" />
+            <Square className="w-5 h-5 fill-current" />
+          </button>
+
+          <button 
+            onClick={handleReset}
+            className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-all cursor-pointer"
+            title="Reset Current Segment"
+          >
+            <RotateCcw className="w-5 h-5" />
           </button>
         </div>
       </div>
-
     </div>
   );
 };
