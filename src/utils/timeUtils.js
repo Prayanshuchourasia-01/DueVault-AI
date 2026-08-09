@@ -6,10 +6,27 @@
  * Combine YYYY-MM-DD and HH:MM into a single ISO string
  */
 export const combineDateAndTime = (dateStr, timeStr) => {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  const d = new Date(year, month - 1, day, hours, minutes, 0, 0);
-  return d.toISOString();
+  if (!dateStr || !timeStr) return new Date().toISOString();
+  
+  try {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const cleanTime = String(timeStr).trim().toUpperCase();
+    const isPM = cleanTime.includes('PM');
+    const isAM = cleanTime.includes('AM');
+    const timeOnly = cleanTime.replace(/[A-Z]/g, '').trim();
+    const parts = timeOnly.split(':').map(Number);
+
+    let hours = parts[0] || 0;
+    let minutes = parts[1] || 0;
+
+    if (isPM && hours < 12) hours += 12;
+    if (isAM && hours === 12) hours = 0;
+
+    const d = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+  } catch (e) {
+    return new Date().toISOString();
+  }
 };
 
 /**

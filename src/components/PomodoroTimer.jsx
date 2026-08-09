@@ -266,7 +266,7 @@ export const PomodoroTimer = ({ startAlarm, sendNotification }) => {
 
       {/* Timer Display */}
       <div className="flex flex-col items-center justify-center py-4">
-        <div className={`text-6xl font-mono font-extrabold tracking-widest drop-shadow-md mb-4 ${
+        <div className={`text-5xl md:text-6xl font-mono font-black tracking-tight leading-none drop-shadow-md my-4 text-center ${
           isComplete ? 'text-emerald-400' : isWork ? 'text-cyan-400' : 'text-emerald-400'
         }`}>
           {isComplete ? '00:00' : formatTime(timeLeft)}

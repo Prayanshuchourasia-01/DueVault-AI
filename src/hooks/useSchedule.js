@@ -235,8 +235,13 @@ export const useSchedule = () => {
     
     setTodaysRoutines(todaysRoutines);
 
-    // Active Focus HUD candidates: ONLY timetable routine blocks (not vault/bill tasks)
-    const allActiveCandidates = [...todaysRoutines];
+    // Active Focus HUD candidates: Timetable routines + today's non-finance/bill tasks
+    const todayTasks = tasks.filter(t => {
+      if (t.date !== todayDateStr) return false;
+      const cat = (t.category || '').toLowerCase();
+      return !['finance', 'bill', 'chores'].includes(cat);
+    });
+    const allActiveCandidates = [...todaysRoutines, ...todayTasks];
 
     const sortedTasks = allActiveCandidates.sort((a, b) => {
       const timeA = a.start ? new Date(a.start).getTime() : 0;
