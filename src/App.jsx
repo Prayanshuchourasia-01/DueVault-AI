@@ -243,6 +243,12 @@ function App() {
             const key = `rt-${rt.id}-${todayStr}-${rtTimeStr}`;
             if (rtTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
               sendNotification("Block Starting", `${rt.title} is starting now at ${timeStr}.`);
+              // Also trigger audio alarm so user actually hears it
+              const tone = localStorage.getItem('duevault_ringtone') || 'modern-chime';
+              startAlarm(tone, {
+                title: `BLOCK STARTING: ${rt.title}`,
+                message: `Your timetable block "${rt.title}" is starting now at ${timeStr}.`
+              });
               notifiedTasksRef.current.add(key);
             }
           }
@@ -274,6 +280,12 @@ function App() {
             const key = `task-${task.id}-${todayStr}-${taskTimeStr}`;
             if (taskTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
               sendNotification("Block Starting", `${task.title} is starting now at ${timeStr}.`);
+              // Also trigger audio alarm for custom tasks
+              const tone = localStorage.getItem('duevault_ringtone') || 'modern-chime';
+              startAlarm(tone, {
+                title: `TASK STARTING: ${task.title}`,
+                message: `Your task "${task.title}" is starting now at ${timeStr}.`
+              });
               notifiedTasksRef.current.add(key);
             }
           }
@@ -295,7 +307,7 @@ function App() {
     }, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
-  }, [tasks, todaysRoutines, sendNotification]);
+  }, [tasks, todaysRoutines, sendNotification, startAlarm]);
 
   const handleToggleComplete = (taskId) => {
     const task = tasks.find(t => t.id === taskId) || routines.find(r => r.id === taskId) || todaysRoutines.find(r => r.id === taskId);

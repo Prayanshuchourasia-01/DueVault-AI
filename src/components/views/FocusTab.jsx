@@ -5,7 +5,7 @@ import { InputEngine } from '../InputEngine';
 import { PomodoroTimer } from '../PomodoroTimer';
 import { AlarmWidget } from '../AlarmWidget';
 
-const academicCategories = ['study', 'coding', 'class', 'lab', 'hackathon', 'homework', 'exam', 'dsa', 'lecture', 'academic'];
+
 
 const FocusTab = ({ 
   tasks, 
@@ -21,10 +21,6 @@ const FocusTab = ({
   
   // Filter for today only
   const todayStr = new Date().toLocaleDateString('en-CA');
-  const nowTime = new Date();
-  
-  const todaysTasks = tasks.filter(t => t.date === todayStr);
-  const allTodayItems = [...todaysTasks, ...todaysRoutines];
 
   const academicCategories = [
     'study', 'coding', 'class', 'lab', 'hackathon', 'homework', 'exam', 
@@ -32,11 +28,20 @@ const FocusTab = ({
     'research', 'learning', 'course', 'test', 'quiz'
   ];
 
-  // 1. Academic & Focus: Today's upcoming timetable routine blocks only (not vault/bill tasks)
+  // 1. Academic & Focus: Next 3 upcoming timetable routine blocks for today
+  //    Include blocks that haven't ended yet (active or upcoming), excluding currently active block shown in FocusHUD
+  const now = new Date();
   let academicTasks = todaysRoutines
-    .filter(t => !t.completed && t.id !== activeTask?.id && new Date(t.end) > nowTime)
+    .filter(t => {
+      if (t.completed) return false;
+      // Exclude the block already displayed in Focus HUD
+      if (activeTask && t.id === activeTask.id) return false;
+      // Include blocks whose end time is still in the future
+      const endTime = new Date(t.end);
+      return !isNaN(endTime.getTime()) && endTime > now;
+    })
     .sort((a, b) => new Date(a.start) - new Date(b.start))
-    .slice(0, 5);
+    .slice(0, 3);
 
   const todayDate = new Date();
   todayDate.setHours(0,0,0,0);
@@ -82,7 +87,7 @@ const FocusTab = ({
         
         {/* Column 1: Focus HUD & Pomodoro Timer */}
         <div className="lg:col-span-1 space-y-6 flex flex-col">
-          <FocusHUD activeTask={activeTask} nextTask={nextTask} onToggleComplete={onToggleComplete} />
+          <FocusHUD activeTask={activeTask} nextTask={nextTask} todaysRoutines={todaysRoutines} onToggleComplete={onToggleComplete} />
           <PomodoroTimer startAlarm={startAlarm} sendNotification={sendNotification} />
         </div>
 

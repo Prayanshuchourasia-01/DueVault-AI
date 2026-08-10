@@ -79,9 +79,35 @@ const generateDefaultTasks = () => {
 };
 
 const defaultRoutines = [
-  { id: 'rt-1', title: 'Data Structures Lecture', category: 'class', dayOfWeek: 'Monday', start: '10:00', end: '11:30', exceptions: {} },
-  { id: 'rt-2', title: 'Advanced OS Lab', category: 'lab', dayOfWeek: 'Wednesday', start: '14:00', end: '17:00', exceptions: {} },
-  { id: 'rt-3', title: 'AI Study Group', category: 'study', dayOfWeek: 'Friday', start: '16:00', end: '18:00', exceptions: {} }
+  // Sunday
+  { id: 'rt-sun-1', title: 'System Architecture & Design', category: 'study', dayOfWeek: 'Sunday', start: '09:00', end: '11:00', exceptions: {} },
+  { id: 'rt-sun-2', title: 'Open Source Development & PRs', category: 'coding', dayOfWeek: 'Sunday', start: '14:00', end: '17:00', exceptions: {} },
+  { id: 'rt-sun-3', title: 'Weekly Exam Prep & DSA Review', category: 'exam', dayOfWeek: 'Sunday', start: '20:00', end: '22:30', exceptions: {} },
+
+  // Monday
+  { id: 'rt-mon-1', title: 'Data Structures & Algorithms', category: 'class', dayOfWeek: 'Monday', start: '10:00', end: '11:30', exceptions: {} },
+  { id: 'rt-mon-2', title: 'Software Engineering Lab', category: 'lab', dayOfWeek: 'Monday', start: '14:00', end: '16:00', exceptions: {} },
+  { id: 'rt-mon-3', title: 'LeetCode Problem Solving', category: 'coding', dayOfWeek: 'Monday', start: '19:00', end: '21:00', exceptions: {} },
+
+  // Tuesday
+  { id: 'rt-tue-1', title: 'Operating Systems Lecture', category: 'class', dayOfWeek: 'Tuesday', start: '09:30', end: '11:30', exceptions: {} },
+  { id: 'rt-tue-2', title: 'Machine Learning Lab', category: 'lab', dayOfWeek: 'Tuesday', start: '14:30', end: '16:30', exceptions: {} },
+
+  // Wednesday
+  { id: 'rt-wed-1', title: 'Database Management Systems', category: 'class', dayOfWeek: 'Wednesday', start: '10:00', end: '12:00', exceptions: {} },
+  { id: 'rt-wed-2', title: 'Advanced OS Lab', category: 'lab', dayOfWeek: 'Wednesday', start: '14:00', end: '17:00', exceptions: {} },
+
+  // Thursday
+  { id: 'rt-thu-1', title: 'Computer Networks Lecture', category: 'class', dayOfWeek: 'Thursday', start: '10:00', end: '12:00', exceptions: {} },
+  { id: 'rt-thu-2', title: 'Algorithm Optimization Workshop', category: 'coding', dayOfWeek: 'Thursday', start: '16:00', end: '18:00', exceptions: {} },
+
+  // Friday
+  { id: 'rt-fri-1', title: 'AI & Neural Networks', category: 'study', dayOfWeek: 'Friday', start: '11:00', end: '13:00', exceptions: {} },
+  { id: 'rt-fri-2', title: 'AI Study Group', category: 'study', dayOfWeek: 'Friday', start: '16:00', end: '18:00', exceptions: {} },
+
+  // Saturday
+  { id: 'rt-sat-1', title: 'Competitive Programming Contest', category: 'coding', dayOfWeek: 'Saturday', start: '10:00', end: '13:00', exceptions: {} },
+  { id: 'rt-sat-2', title: 'Capstone Project Development', category: 'project', dayOfWeek: 'Saturday', start: '15:00', end: '18:00', exceptions: {} }
 ];
 
 export const useSchedule = () => {
