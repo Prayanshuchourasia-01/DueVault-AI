@@ -71,3 +71,7 @@ This journal documents the architectural evolution, feature specifications, desi
 ## August 4, 2026
 - Documented 8 synth ringtone presets: Modern Chime, Digital Watch, Marimba Ripple, Sonar Ping, Cosmic Bell, Soft Pulse, Cyber Siren, and Custom.
 
+## August 11, 2026
+- Documented Service Worker 10s background loop for closed-app notifications.
+- Specified native OS TimestampTrigger pre-scheduling for mobile PWA push alerts.
+
