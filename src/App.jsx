@@ -347,7 +347,40 @@ function App() {
             }
           }
         }
-      });
+      // Check 7 AM - 9 AM Daily Overdue Task & Bill Reminder Alert
+      const currentHour = now.getHours();
+      if (currentHour >= 7 && currentHour < 9) {
+        const lastNotifiedDate = localStorage.getItem('duevault_overdue_morning_notified_date');
+        if (lastNotifiedDate !== todayStr) {
+          const todayDateZero = new Date(now);
+          todayDateZero.setHours(0,0,0,0);
+
+          const overdueTasks = tasks.filter(t => {
+            if (t.completed || t.isRoutine || !!t.routineId) return false;
+            const tDate = new Date(t.date || t.start);
+            tDate.setHours(0,0,0,0);
+            return tDate < todayDateZero;
+          });
+
+          if (overdueTasks.length > 0) {
+            console.log('[DueVault] 🚨 7-9 AM Morning Overdue Alert:', overdueTasks.length, 'overdue item(s)');
+            const sampleTitle = overdueTasks[0].title;
+            const msg = overdueTasks.length === 1 
+              ? `Overdue Task Alert: "${sampleTitle}" needs your attention!`
+              : `You have ${overdueTasks.length} overdue task(s) including "${sampleTitle}". Please complete them today!`;
+            
+            sendNotification("🚨 Daily Overdue Reminder", msg);
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage({
+                type: 'SHOW_NOTIFICATION',
+                title: `🚨 Daily Overdue Reminder (${overdueTasks.length} Pending)`,
+                options: { body: msg, vibrate: [300, 100, 300, 100, 300], requireInteraction: true }
+              });
+            }
+            localStorage.setItem('duevault_overdue_morning_notified_date', todayStr);
+          }
+        }
+      }
     }, 5000); // Check every 5 seconds for better accuracy
 
     return () => clearInterval(interval);
