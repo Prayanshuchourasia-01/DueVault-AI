@@ -80,7 +80,7 @@ const FocusTab = ({
   const hasLife = thisWeekTasks.length > 0 || nextWeekTasks.length > 0 || thisMonthTasks.length > 0;
 
   return (
-    <div className="w-full mx-auto space-y-6 animate-fade-in pb-24 md:pb-6">
+    <div className="w-full mx-auto space-y-6 animate-fade-in pb-4">
       <InputEngine onAddTask={onAddTask} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-7xl mx-auto">

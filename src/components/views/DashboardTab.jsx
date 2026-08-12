@@ -257,7 +257,7 @@ const DashboardTab = ({ tasks, routines, onToggleComplete }) => {
   }, [upcomingWeek, todayStr, onToggleComplete, timeFilter]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-24 md:pb-6 font-sans">
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-4 font-sans">
       
       {/* Dashboard Pipeline (Timetable Blocks) */}
       <div className="space-y-6">

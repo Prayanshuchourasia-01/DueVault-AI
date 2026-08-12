@@ -114,7 +114,7 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines, startAlarm }) => {
   ];
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-4 animate-fade-in pb-20 md:pb-4">
+    <div className="w-full max-w-5xl mx-auto space-y-4 animate-fade-in pb-4">
       
       {/* Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex justify-between items-center">

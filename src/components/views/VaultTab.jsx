@@ -58,7 +58,7 @@ const VaultTab = ({ tasks, onAddTask, onToggleComplete, onDeleteTask, onEditTask
     .sort((a, b) => new Date(b.date || b.start) - new Date(a.date || a.start));
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-6 font-sans">
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-4 font-sans">
       
       {/* Header & Controls */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">

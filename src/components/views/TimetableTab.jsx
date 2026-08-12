@@ -150,7 +150,7 @@ const TimetableTab = ({
 
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-fade-in pb-24 md:pb-6 font-sans relative">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-fade-in pb-4 font-sans relative">
       
       {/* Loading Overlay */}
       {isResetting && (

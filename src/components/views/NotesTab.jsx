@@ -38,7 +38,7 @@ const NotesTab = ({ notes, onAddNote, onUpdateNote, onDeleteNote }) => {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-6">
+    <div className="w-full max-w-5xl mx-auto space-y-6 animate-fade-in pb-4">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
         <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
           <StickyNote className="w-6 h-6 text-indigo-400" />

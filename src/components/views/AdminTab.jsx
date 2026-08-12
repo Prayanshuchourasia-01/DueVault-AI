@@ -430,7 +430,7 @@ const AdminTab = ({ subTab }) => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-6">
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-4">
 
       {/* Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

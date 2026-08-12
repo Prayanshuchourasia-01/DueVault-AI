@@ -152,7 +152,7 @@ export const HistoryTab = () => {
   const maxDailyCount = Math.max(1, ...chartDays.map(d => d.count));
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-6 font-sans">
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-4 font-sans">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-3">

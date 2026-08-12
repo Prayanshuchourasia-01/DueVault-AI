@@ -503,7 +503,7 @@ const FinanceTab = ({ tasks, sendNotification, onUpdateTask }) => {
   const showResetPrompt = finances.lastResetWeek !== currentWeekId;
 
   return (
-    <div className="finances-tab-container w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-24 md:pb-6 font-sans">
+    <div className="finances-tab-container w-full max-w-7xl mx-auto space-y-8 animate-fade-in pb-4 font-sans">
       
       {/* Week Reset Fresh Start Banner */}
       {showResetPrompt && (
