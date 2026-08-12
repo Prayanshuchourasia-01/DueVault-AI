@@ -347,6 +347,8 @@ function App() {
             }
           }
         }
+      });
+
       // Check 7 AM - 9 AM Daily Overdue Task & Bill Reminder Alert
       const currentHour = now.getHours();
       if (currentHour >= 7 && currentHour < 9) {
