@@ -21,6 +21,25 @@ const playNotificationChime = () => {
   }
 };
 
+/**
+ * Send a notification through the Service Worker (works on mobile phones).
+ * Falls back to window Notification if SW is unavailable.
+ */
+const sendViaServiceWorker = async (title, options) => {
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && reg.showNotification) {
+        await reg.showNotification(title, options);
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('Service Worker notification failed:', e);
+  }
+  return false;
+};
+
 export const useNotifications = () => {
   const [permission, setPermission] = useState(() => ('Notification' in window ? Notification.permission : 'denied'));
 
@@ -56,36 +75,41 @@ export const useNotifications = () => {
   }, [checkPermission]);
 
   const sendNotification = useCallback((title, body) => {
-    // 1. Play pleasant notification chime
+    console.log(`[DueVault Notification] ${title}: ${body}`);
+
+    // 1. Play pleasant notification chime (works when tab is active)
     playNotificationChime();
 
     // 2. Dispatch in-app toast event (always visible in UI)
     window.dispatchEvent(new CustomEvent('show-toast', { detail: { title, body } }));
 
-    // 3. Native System/Browser Notification
+    // 3. Native System/Phone Notification
     if ('Notification' in window && Notification.permission === 'granted') {
       const notificationOptions = {
         body,
         icon: '/favicon.svg',
         badge: '/favicon.svg',
-        vibrate: [200, 100, 200],
-        tag: 'duevault-note-' + Date.now(),
-        renotify: true
+        vibrate: [200, 100, 200, 100, 200],
+        tag: 'duevault-' + Date.now(),
+        renotify: true,
+        requireInteraction: true, // Keep notification visible until user taps it
+        silent: false
       };
 
-      // Direct Window Notification
-      try {
-        new Notification(title, notificationOptions);
-      } catch (err) {
-        console.warn('Native Window Notification constructor failed, trying Service Worker:', err);
-        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.ready.then((reg) => {
-            if (reg && reg.showNotification) {
-              reg.showNotification(title, notificationOptions);
-            }
-          }).catch(() => {});
+      // ALWAYS try Service Worker first (required for mobile phones)
+      sendViaServiceWorker(title, notificationOptions).then(success => {
+        if (!success) {
+          // Fallback: Direct window notification (works on desktop browsers)
+          try {
+            new Notification(title, notificationOptions);
+          } catch (err) {
+            console.warn('All notification methods failed:', err);
+          }
         }
-      }
+      });
+    } else {
+      console.warn('[DueVault] Notification permission not granted. Current:', 
+        'Notification' in window ? Notification.permission : 'API not available');
     }
   }, []);
 
@@ -124,4 +148,3 @@ export const useNotifications = () => {
 
   return { sendNotification, permission, askPermission, testNotification };
 };
-

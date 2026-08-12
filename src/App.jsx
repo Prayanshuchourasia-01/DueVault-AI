@@ -228,9 +228,13 @@ function App() {
   // Robust Block Starting & Ending Notification Scheduler (exact minute matching)
   const notifiedTasksRef = React.useRef(new Set());
   useEffect(() => {
+    console.log('[DueVault] Notification scheduler started. Routines:', todaysRoutines.length, 'Tasks:', tasks.length);
+    
     const interval = setInterval(() => {
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      const currentHours = now.getHours().toString().padStart(2, '0');
+      const currentMinutes = now.getMinutes().toString().padStart(2, '0');
+      const timeStr = `${currentHours}:${currentMinutes}`;
       const todayStr = now.toLocaleDateString('en-CA');
       
       // Check routine tasks starting/ending now
@@ -239,16 +243,26 @@ function App() {
         if (rt.start) {
           const startDate = new Date(rt.start);
           if (!isNaN(startDate.getTime())) {
-            const rtTimeStr = startDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const rtHours = startDate.getHours().toString().padStart(2, '0');
+            const rtMinutes = startDate.getMinutes().toString().padStart(2, '0');
+            const rtTimeStr = `${rtHours}:${rtMinutes}`;
             const key = `rt-${rt.id}-${todayStr}-${rtTimeStr}`;
             if (rtTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
-              sendNotification("Block Starting", `${rt.title} is starting now at ${timeStr}.`);
-              // Also trigger audio alarm so user actually hears it
+              console.log('[DueVault] 🔔 Block starting:', rt.title, 'at', rtTimeStr);
+              sendNotification("🟢 Block Starting", `${rt.title} is starting now at ${rtTimeStr}.`);
               const tone = localStorage.getItem('duevault_ringtone') || 'modern-chime';
               startAlarm(tone, {
                 title: `BLOCK STARTING: ${rt.title}`,
-                message: `Your timetable block "${rt.title}" is starting now at ${timeStr}.`
+                message: `Your timetable block "${rt.title}" is starting now at ${rtTimeStr}.`
               });
+              // Also send directly via Service Worker for phone notifications
+              if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                  type: 'SHOW_NOTIFICATION',
+                  title: `🟢 Block Starting: ${rt.title}`,
+                  options: { body: `Your timetable block "${rt.title}" is starting now at ${rtTimeStr}.`, vibrate: [200, 100, 200, 100, 200] }
+                });
+              }
               notifiedTasksRef.current.add(key);
             }
           }
@@ -258,10 +272,21 @@ function App() {
         if (rt.end) {
           const endDate = new Date(rt.end);
           if (!isNaN(endDate.getTime())) {
-            const rtEndTimeStr = endDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const rtEndHours = endDate.getHours().toString().padStart(2, '0');
+            const rtEndMinutes = endDate.getMinutes().toString().padStart(2, '0');
+            const rtEndTimeStr = `${rtEndHours}:${rtEndMinutes}`;
             const keyEnd = `rt-end-${rt.id}-${todayStr}-${rtEndTimeStr}`;
             if (rtEndTimeStr === timeStr && !notifiedTasksRef.current.has(keyEnd)) {
-              sendNotification("Block Ended", `${rt.title} has ended at ${timeStr}.`);
+              console.log('[DueVault] 🔴 Block ended:', rt.title, 'at', rtEndTimeStr);
+              sendNotification("🔴 Block Ended", `${rt.title} has ended at ${rtEndTimeStr}.`);
+              // Also send directly via Service Worker
+              if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                  type: 'SHOW_NOTIFICATION',
+                  title: `🔴 Block Ended: ${rt.title}`,
+                  options: { body: `Your timetable block "${rt.title}" has ended at ${rtEndTimeStr}.`, vibrate: [100, 50, 100] }
+                });
+              }
               notifiedTasksRef.current.add(keyEnd);
             }
           }
@@ -276,16 +301,25 @@ function App() {
         if (task.start) {
           const startDate = new Date(task.start);
           if (!isNaN(startDate.getTime())) {
-            const taskTimeStr = startDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const taskHours = startDate.getHours().toString().padStart(2, '0');
+            const taskMinutes = startDate.getMinutes().toString().padStart(2, '0');
+            const taskTimeStr = `${taskHours}:${taskMinutes}`;
             const key = `task-${task.id}-${todayStr}-${taskTimeStr}`;
             if (taskTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
-              sendNotification("Block Starting", `${task.title} is starting now at ${timeStr}.`);
-              // Also trigger audio alarm for custom tasks
+              console.log('[DueVault] 🔔 Task starting:', task.title, 'at', taskTimeStr);
+              sendNotification("🟢 Task Starting", `${task.title} is starting now at ${taskTimeStr}.`);
               const tone = localStorage.getItem('duevault_ringtone') || 'modern-chime';
               startAlarm(tone, {
                 title: `TASK STARTING: ${task.title}`,
-                message: `Your task "${task.title}" is starting now at ${timeStr}.`
+                message: `Your task "${task.title}" is starting now at ${taskTimeStr}.`
               });
+              if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                  type: 'SHOW_NOTIFICATION',
+                  title: `🟢 Task Starting: ${task.title}`,
+                  options: { body: `Your task "${task.title}" is starting now at ${taskTimeStr}.`, vibrate: [200, 100, 200, 100, 200] }
+                });
+              }
               notifiedTasksRef.current.add(key);
             }
           }
@@ -295,16 +329,26 @@ function App() {
         if (task.end) {
           const endDate = new Date(task.end);
           if (!isNaN(endDate.getTime())) {
-            const taskEndTimeStr = endDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const taskEndHours = endDate.getHours().toString().padStart(2, '0');
+            const taskEndMinutes = endDate.getMinutes().toString().padStart(2, '0');
+            const taskEndTimeStr = `${taskEndHours}:${taskEndMinutes}`;
             const keyEnd = `task-end-${task.id}-${todayStr}-${taskEndTimeStr}`;
             if (taskEndTimeStr === timeStr && !notifiedTasksRef.current.has(keyEnd)) {
-              sendNotification("Block Ended", `${task.title} has ended at ${timeStr}.`);
+              console.log('[DueVault] 🔴 Task ended:', task.title, 'at', taskEndTimeStr);
+              sendNotification("🔴 Task Ended", `${task.title} has ended at ${taskEndTimeStr}.`);
+              if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                  type: 'SHOW_NOTIFICATION',
+                  title: `🔴 Task Ended: ${task.title}`,
+                  options: { body: `Your task "${task.title}" has ended at ${taskEndTimeStr}.`, vibrate: [100, 50, 100] }
+                });
+              }
               notifiedTasksRef.current.add(keyEnd);
             }
           }
         }
       });
-    }, 10000); // Check every 10 seconds
+    }, 5000); // Check every 5 seconds for better accuracy
 
     return () => clearInterval(interval);
   }, [tasks, todaysRoutines, sendNotification, startAlarm]);

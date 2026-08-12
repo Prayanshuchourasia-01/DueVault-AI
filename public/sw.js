@@ -1,4 +1,4 @@
-const CACHE_NAME = 'duevault-cache-v9';
+const CACHE_NAME = 'duevault-cache-v10';
 const ASSETS = [
   '/',
   '/index.html',
@@ -51,6 +51,24 @@ self.addEventListener('fetch', (e) => {
       })
       .catch(() => caches.match(e.request))
   );
+});
+
+// Listen for messages from the main app to show notifications
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = e.data;
+    self.registration.showNotification(title, {
+      body: options.body || '',
+      icon: options.icon || '/favicon.svg',
+      badge: options.badge || '/favicon.svg',
+      vibrate: options.vibrate || [200, 100, 200],
+      tag: options.tag || 'duevault-sw-' + Date.now(),
+      renotify: true,
+      requireInteraction: true,
+      silent: false,
+      data: options.data || {}
+    });
+  }
 });
 
 // Notification click behavior
