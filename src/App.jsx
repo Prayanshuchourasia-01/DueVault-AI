@@ -230,7 +230,7 @@ function App() {
   useEffect(() => {
     console.log('[DueVault] Notification scheduler started. Routines:', todaysRoutines.length, 'Tasks:', tasks.length);
     
-    const interval = setInterval(() => {
+    const checkNotifications = () => {
       const now = new Date();
       const currentHours = now.getHours().toString().padStart(2, '0');
       const currentMinutes = now.getMinutes().toString().padStart(2, '0');
@@ -383,7 +383,13 @@ function App() {
           }
         }
       }
-    }, 5000); // Check every 5 seconds for better accuracy
+    };
+
+    // Run immediately on mount/dependency change (catches exact-minute matches right away)
+    checkNotifications();
+
+    // Then check every 5 seconds for ongoing accuracy
+    const interval = setInterval(checkNotifications, 5000);
 
     return () => clearInterval(interval);
   }, [tasks, todaysRoutines, sendNotification, startAlarm]);
