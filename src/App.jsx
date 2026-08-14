@@ -248,6 +248,20 @@ function App() {
     }
   }, [todaysRoutines, tasks]);
 
+  // Listen for interactive Notification Action clicks (e.g., 'Mark Done' tapped on phone notification)
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const handleSwMessage = (e) => {
+        if (e.data && e.data.type === 'TOGGLE_COMPLETE_TASK' && e.data.taskId) {
+          console.log('[DueVault] Received Mark Done request from notification action for ID:', e.data.taskId);
+          handleToggleComplete(e.data.taskId);
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+    }
+  }, [handleToggleComplete]);
+
   // Robust Block Starting & Ending Notification Scheduler (exact minute matching)
   const notifiedTasksRef = React.useRef(new Set());
   useEffect(() => {
@@ -272,7 +286,9 @@ function App() {
             const key = `rt-${rt.id}-${todayStr}-${rtTimeStr}`;
             if (rtTimeStr === timeStr && !notifiedTasksRef.current.has(key)) {
               console.log('[DueVault] 🔔 Block starting:', rt.title, 'at', rtTimeStr);
-              sendNotification("🟢 Block Starting", `${rt.title} is starting now at ${rtTimeStr}.`);
+              sendNotification("🟢 Block Starting", `${rt.title} is starting now at ${rtTimeStr}.`, {
+                data: { taskId: rt.routineId || rt.id, isRoutine: true }
+              });
               const tone = localStorage.getItem('duevault_ringtone') || 'modern-chime';
               startAlarm(tone, {
                 title: `BLOCK STARTING: ${rt.title}`,
@@ -283,7 +299,15 @@ function App() {
                 navigator.serviceWorker.controller.postMessage({
                   type: 'SHOW_NOTIFICATION',
                   title: `🟢 Block Starting: ${rt.title}`,
-                  options: { body: `Your timetable block "${rt.title}" is starting now at ${rtTimeStr}.`, vibrate: [200, 100, 200, 100, 200] }
+                  options: { 
+                    body: `Your timetable block "${rt.title}" is starting now at ${rtTimeStr}.`, 
+                    vibrate: [200, 100, 200, 100, 200],
+                    actions: [
+                      { action: 'MARK_DONE', title: '✅ Mark Done' },
+                      { action: 'DISMISS', title: '✖ Dismiss' }
+                    ],
+                    data: { taskId: rt.routineId || rt.id, isRoutine: true }
+                  }
                 });
               }
               notifiedTasksRef.current.add(key);
@@ -301,13 +325,23 @@ function App() {
             const keyEnd = `rt-end-${rt.id}-${todayStr}-${rtEndTimeStr}`;
             if (rtEndTimeStr === timeStr && !notifiedTasksRef.current.has(keyEnd)) {
               console.log('[DueVault] 🔴 Block ended:', rt.title, 'at', rtEndTimeStr);
-              sendNotification("🔴 Block Ended", `${rt.title} has ended at ${rtEndTimeStr}.`);
+              sendNotification("🔴 Block Ended", `${rt.title} has ended at ${rtEndTimeStr}.`, {
+                data: { taskId: rt.routineId || rt.id, isRoutine: true }
+              });
               // Also send directly via Service Worker
               if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage({
                   type: 'SHOW_NOTIFICATION',
                   title: `🔴 Block Ended: ${rt.title}`,
-                  options: { body: `Your timetable block "${rt.title}" has ended at ${rtEndTimeStr}.`, vibrate: [100, 50, 100] }
+                  options: { 
+                    body: `Your timetable block "${rt.title}" has ended at ${rtEndTimeStr}.`, 
+                    vibrate: [100, 50, 100],
+                    actions: [
+                      { action: 'MARK_DONE', title: '✅ Mark Done' },
+                      { action: 'DISMISS', title: '✖ Dismiss' }
+                    ],
+                    data: { taskId: rt.routineId || rt.id, isRoutine: true }
+                  }
                 });
               }
               notifiedTasksRef.current.add(keyEnd);

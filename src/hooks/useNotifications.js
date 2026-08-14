@@ -74,7 +74,7 @@ export const useNotifications = () => {
     };
   }, [checkPermission]);
 
-  const sendNotification = useCallback((title, body) => {
+  const sendNotification = useCallback((title, body, options = {}) => {
     console.log(`[DueVault Notification] ${title}: ${body}`);
 
     // 1. Play pleasant notification chime (works when tab is active)
@@ -89,11 +89,16 @@ export const useNotifications = () => {
         body,
         icon: '/favicon.svg',
         badge: '/favicon.svg',
-        vibrate: [200, 100, 200, 100, 200],
-        tag: 'duevault-' + Date.now(),
+        vibrate: options.vibrate || [200, 100, 200, 100, 200],
+        tag: options.tag || 'duevault-' + Date.now(),
         renotify: true,
-        requireInteraction: true, // Keep notification visible until user taps it
-        silent: false
+        requireInteraction: true,
+        silent: false,
+        actions: options.actions || [
+          { action: 'MARK_DONE', title: '✅ Mark Done' },
+          { action: 'DISMISS', title: '✖ Dismiss' }
+        ],
+        data: options.data || {}
       };
 
       // ALWAYS try Service Worker first (required for mobile phones)

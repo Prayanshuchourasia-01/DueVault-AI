@@ -1,4 +1,4 @@
-const CACHE_NAME = 'duevault-cache-v11';
+const CACHE_NAME = 'duevault-cache-v12';
 const ASSETS = [
   '/',
   '/index.html',
@@ -38,13 +38,11 @@ self.addEventListener('activate', (e) => {
 
 // Fetch event - network-first fallback to cache
 self.addEventListener('fetch', (e) => {
-  // Only handle standard http/https schemes (ignore chrome-extension, etc.)
   if (!e.request.url.startsWith(self.location.origin)) return;
 
   e.respondWith(
     fetch(e.request)
       .then((response) => {
-        // Cache new successful requests dynamically
         if (response.status === 200) {
           const resClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -78,6 +76,10 @@ self.addEventListener('message', (e) => {
       renotify: true,
       requireInteraction: true,
       silent: false,
+      actions: options.actions || [
+        { action: 'MARK_DONE', title: '✅ Mark Done' },
+        { action: 'DISMISS', title: '✖ Dismiss' }
+      ],
       data: options.data || {}
     });
   }
@@ -110,7 +112,12 @@ function checkBackgroundNotifications() {
             tag: key,
             renotify: true,
             requireInteraction: true,
-            silent: false
+            silent: false,
+            actions: [
+              { action: 'MARK_DONE', title: '✅ Mark Done' },
+              { action: 'DISMISS', title: '✖ Dismiss' }
+            ],
+            data: { taskId: rt.routineId || rt.id, isRoutine: true }
           });
         }
       }
@@ -132,7 +139,12 @@ function checkBackgroundNotifications() {
             vibrate: [100, 50, 100],
             tag: keyEnd,
             renotify: true,
-            silent: false
+            silent: false,
+            actions: [
+              { action: 'MARK_DONE', title: '✅ Mark Done' },
+              { action: 'DISMISS', title: '✖ Dismiss' }
+            ],
+            data: { taskId: rt.routineId || rt.id, isRoutine: true }
           });
         }
       }
@@ -159,7 +171,12 @@ function checkBackgroundNotifications() {
             tag: key,
             renotify: true,
             requireInteraction: true,
-            silent: false
+            silent: false,
+            actions: [
+              { action: 'MARK_DONE', title: '✅ Mark Done' },
+              { action: 'DISMISS', title: '✖ Dismiss' }
+            ],
+            data: { taskId: task.id, isRoutine: false }
           });
         }
       }
@@ -170,9 +187,34 @@ function checkBackgroundNotifications() {
 // Check every 10 seconds in the background
 setInterval(checkBackgroundNotifications, 10000);
 
-// Notification click behavior
+// Notification click and action button behavior
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const action = e.action;
+  const data = e.notification.data || {};
+
+  if (action === 'MARK_DONE' && data.taskId) {
+    console.log('[SW] Mark Done action clicked for task:', data.taskId);
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      clientList.forEach(client => {
+        client.postMessage({ type: 'TOGGLE_COMPLETE_TASK', taskId: data.taskId });
+      });
+    });
+
+    self.registration.showNotification('🎉 Item Completed!', {
+      body: 'Your timetable block / task has been marked as done!',
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      tag: 'done-confirm-' + Date.now()
+    });
+    return;
+  }
+
+  if (action === 'DISMISS') {
+    return; // Notification closed
+  }
+
+  // Default click behavior (tapping body): focus or open app window
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       if (clientList.length > 0) {
