@@ -192,6 +192,15 @@ function App() {
     stopAlarm();
   };
 
+  const handleToggleComplete = React.useCallback((taskId) => {
+    const task = tasks.find(t => t.id === taskId) || routines.find(r => r.id === taskId) || todaysRoutines.find(r => r.id === taskId);
+    const isCompleted = task?.completed;
+    if (task && !isCompleted) {
+      sendNotification("Task Completed", `Excellent work finishing: ${task.title}`);
+    }
+    toggleComplete(taskId);
+  }, [tasks, routines, todaysRoutines, sendNotification, toggleComplete]);
+
   // Handle Exact Time Reminders
   useEffect(() => {
     const interval = setInterval(() => {
@@ -458,15 +467,6 @@ function App() {
 
     return () => clearInterval(interval);
   }, [tasks, todaysRoutines, sendNotification, startAlarm]);
-
-  const handleToggleComplete = (taskId) => {
-    const task = tasks.find(t => t.id === taskId) || routines.find(r => r.id === taskId) || todaysRoutines.find(r => r.id === taskId);
-    const isCompleted = task?.completed;
-    if (task && !isCompleted) {
-      sendNotification("Task Completed", `Excellent work finishing: ${task.title}`);
-    }
-    toggleComplete(taskId);
-  };
 
   // Auth Loading Render Gate
   if (authLoading) {
