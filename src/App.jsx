@@ -36,6 +36,14 @@ function App() {
 
   const [theme, setTheme] = useState(() => localStorage.getItem('duevault_theme') || 'dark');
 
+  // Safety fallback timeout to ensure authLoading never hangs forever
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAuthLoading(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // 1. Subscribe to Firebase Auth and check Admin Profile doc
   useEffect(() => {
     let unsubProfile = () => {};
