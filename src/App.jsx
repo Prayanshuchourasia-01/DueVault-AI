@@ -225,6 +225,29 @@ function App() {
     }
   }, [activeTask, dismissedAlarmTaskId, startAlarm, stopAlarm]);
 
+  // Automatically sync schedules with Service Worker for background/closed-app notifications
+  useEffect(() => {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SYNC_SCHEDULES',
+        routines: todaysRoutines.map(r => ({
+          id: r.id,
+          title: r.title,
+          start: r.start,
+          end: r.end
+        })),
+        tasks: tasks.map(t => ({
+          id: t.id,
+          title: t.title,
+          date: t.date,
+          start: t.start,
+          end: t.end,
+          completed: t.completed
+        }))
+      });
+    }
+  }, [todaysRoutines, tasks]);
+
   // Robust Block Starting & Ending Notification Scheduler (exact minute matching)
   const notifiedTasksRef = React.useRef(new Set());
   useEffect(() => {
