@@ -1,173 +1,151 @@
 # DueVault AI 🚀
 
-**DueVault AI** is a privacy-first, fully localized AI productivity dashboard and engineering workflow engine. Built for developers, students, and power users, it leverages local intelligence to act as a personal project manager—parsing plain text commands and raw HTML schedules into actionable timelines, focus slots, dynamic budgets, and deep-work analytics.
+**DueVault AI** is an enterprise-grade, privacy-first, fully responsive PWA (Progressive Web Application), AI productivity dashboard, and strategic lifestyle management engine. Built for power users, students, and engineers, it features offline-first local scheduling, Service Worker background notifications with interactive phone action buttons, financial control ledgers, and multi-user administrative authorization.
 
-> **Built using Vibe Coding for the Google 5 Days AI Course.**
-> 🔒 **100% Client-Side Private:** No databases, no telemetry, no cloud sync. All operations execute directly in your browser using local structures and LocalStorage.
+> 🏆 **Built for the Google 5 Days AI Course.**  
+> 🔒 **100% Private & Environment Safe:** No hardcoded credentials or API keys. All state is maintained locally and via secure environment variables.  
+> 📱 **PWA & Mobile Native Ready:** Complete mobile view optimization with background Service Worker execution, lock-screen notification actions, and responsive dark/light themes.
 
 ---
 
-## 🛠️ Application Architecture & Workflow
-
-DueVault AI uses a fully local data flow to eliminate context switching, routing tasks, and transaction ledgers to their respective interactive HUD modules.
+## 🏗️ System Architecture & Workflow
 
 ```mermaid
 flowchart TD
-    %% Inputs
-    Input1[Natural Language Text Command] --> |Gemini AI Parser| Schema[Structured Task Schema]
-    Input2[HTML Student Portal Timetable] --> |HTML Parser Engine| Routines[Local Daily Routines]
-    Input3[Manual Form Logs] --> |Interactive Modals| Schema
+    %% Input Layer
+    subgraph Inputs["1. Unified Input Layer"]
+        A1[Natural Language Text Command] --> |Gemini 2.5 Flash Parser| B1[Structured Task Schema]
+        A2[HTML Student Portal Timetable] --> |DOM Parser Engine| B2[Weekly Recurring Routines]
+        A3[Interactive Form Inputs] --> B1
+    end
 
-    %% Processing & Storage
-    Schema --> LS[(LocalStorage DB)]
-    Routines --> LS
-    
-    %% Views / HUD Modules
-    LS --> |Filters Academic Slots| HUD[Focus Tab HUD]
-    LS --> |Filters Non-Academic Tasks| Vault[Life & Vault Column]
-    LS --> |Aggregates Week/Month Transactions| Finance[Financial Control Center]
-    LS --> |Computes Hours & Active Pipeline| Dash[Analytics Dashboard]
+    %% Storage & Service Worker Engine
+    subgraph CoreEngine["2. Local State & Service Worker Engine"]
+        B1 --> Storage[(LocalStorage / Firestore)]
+        B2 --> Storage
+        Storage --> |postMessage SYNC_SCHEDULES| SW[Service Worker sw.js]
+        SW --> |10s Background Loop| SWCheck{Time Match?}
+        SWCheck -->|Yes| PhoneNotif[Native System / Lock-Screen Notification]
+        PhoneNotif -->|Interactive Button Tap| ActionMark[Action: ✅ Mark Done / ✖ Dismiss]
+        ActionMark -->|postMessage TOGGLE_COMPLETE_TASK| Storage
+    end
 
-    %% Interactions & Controls
-    HUD --> |Radial Timer / Complete| Success[Emerald Finish Screen]
-    Finance --> |Spend Limit Breach| Push[System Toast Notification]
-    Finance --> |Export Ledger| CSV[CSV Statement Export]
+    %% View Modules
+    subgraph Views["3. Application View Modules"]
+        Storage --> V1[Focus HUD & Academic Timeline]
+        Storage --> V2[Strategic Life Vault & Overdue Hub]
+        Storage --> V3[Financial Control Center]
+        Storage --> V4[Analytics & Engineering Dashboard]
+        Storage --> V5[Firebase Administrative Console]
+    end
 ```
-
-### 1. Unified Processing (The Input Phase)
-*   **Natural Language Parsing:** Input phrases like *"Advanced ML Lab tomorrow at 2pm"* are mapped using Gemini into precise JSON schemas containing dates, categories, reminders, and priorities.
-*   **HTML Scraping:** Paste raw HTML code directly from university student portals. The system scrapes layout structures, identifies timeslots, and registers recurring routine spawns.
-
-### 2. High-Performance Interfaces (The Execution Phase)
-*   **Focus HUD & Timetable:** Academic tasks and routines are lined up sequentially. The active slot controls an immersive countdown clock. When all tasks are completed, the interface transitions to an emerald finish screen.
-*   **Strategic Vault Column:** Collates all non-academic reminders, chores, and personal tasks, sorting them into clear action horizons (*This Week*, *Next Week*, *This Month*) with automated cutoff times.
-
-### 3. Financial Control Center
-*   **Dynamic Timeframe Switcher:** Toggle between *Current Week*, *Previous Week*, and *Previous Month* to dynamically update total liquid net worth, safe-to-spend estimations, and outflows.
-*   **Safe-to-Spend Selector:** Choose whether upcoming bills should be deducted from your safe-to-spend amount immediately or manually, reflecting real-world cash flow control.
-*   **Managed Accounts:** Custom account creation with weekly default start baseline resets, toggleable spend limits, warning badges, and automatic notifications on limit breaches.
-
-### 4. Engineering Analytics Dashboard
-*   **Horizontal Pipeline:** A draggable scrolling timeline showing upcoming blocks, highlighting the active slot, and flagging overdue unfinished items as `TIME OVER`.
-*   **Deep Work Density:** Automatically computes hours logged on technical tasks versus routine overhead.
 
 ---
 
-## 🎨 Professional Interface Preview
+## 🌟 Comprehensive Feature Breakdown
 
-Toggle between dark and light themes seamlessly. Every interface element is fine-tuned for high contrast, clean aesthetics, and visual comfort.
+### 🔔 1. Service Worker & Background Notification Engine
+* **Closed-App Background Execution:** Powered by a custom Service Worker (`public/sw.js`) running a 10-second background evaluation loop. Notifications trigger reliably even when the browser tab or PWA app is completely closed.
+* **Interactive Notification Actions:** Direct action buttons in the phone notification drawer:
+  * **`✅ Mark Done`** — Completes the timetable block or task directly from your phone's lock screen without opening the browser.
+  * **`✖ Dismiss`** — Dismisses the alert notification.
+* **Exact-Minute Block Alerts:** Instant `🟢 Block Starting` and `🔴 Block Ended` notifications for all scheduled routine slots.
+* **Daily 7:00 AM – 9:00 AM Overdue Alert:** Automatic daily morning push notifications for any uncompleted overdue tasks or pending bills.
+* **Synthesizer & Audio Alarms:** Built-in Web Audio API sound generator supporting multiple ringtones (*Modern Chime*, *Soft Pulse*, *Urgent Alarm*) and custom MP3/WAV uploads.
 
-### 1. Focus HUD & Academic Timeline
-*Interactive study slots, countdown timers, and timetable trackers.*
-<table>
-  <tr>
-    <td width="50%"><b>🌙 Dark Mode</b></td>
-    <td width="50%"><b>☀️ Light Mode</b></td>
-  </tr>
-  <tr>
-    <td><img src="./src/assets/focus_dark.png" alt="Focus HUD Dark" /></td>
-    <td><img src="./src/assets/focus_light.png" alt="Focus HUD Light" /></td>
-  </tr>
-</table>
+### 🎯 2. Focus HUD & Academic Timetable
+* **3-State Focus HUD:** Intelligently transitions between:
+  1. **Active Task / Routine Block** with progress timers and priority tags.
+  2. **Upcoming Horizon** when preparing for the next scheduled block.
+  3. **All Work Completed** screen upon finishing daily routines.
+* **Academic & Focus Section:** Displays the next 3 timetable routine blocks sorted chronologically based on current time.
+* **Pomodoro Focus Timer:** Customizable work/rest focus intervals with chime alerts and browser notification sync.
 
-### 2. Engineering Analytics Dashboard
-*Metrics on deep work density, task completions, and draggable timeline.*
-<table>
-  <tr>
-    <td width="50%"><b>🌙 Dark Mode</b></td>
-    <td width="50%"><b>☀️ Light Mode</b></td>
-  </tr>
-  <tr>
-    <td><img src="./src/assets/dashboard_dark.png" alt="Analytics HUD Dark" /></td>
-    <td><img src="./src/assets/dashboard_light.png" alt="Analytics HUD Light" /></td>
-  </tr>
-</table>
+### 🏦 3. Strategic Life Vault & Overdue Hub
+* **🚨 Overdue & Pending Action Section:** Highlighted warning section for past-due tasks, unpaid bills, and missed deadlines.
+* **📅 Categorized Horizons:** Organizes items into *Overdue*, *Due This Week*, *Upcoming (Later)*, and *Completed Vault History*.
+* **Real-World Summary Metrics:** Stat cards displaying overdue item count, upcoming week volume, total unpaid bills (`₹`), and completed task metrics.
 
-### 3. Financial Control Center
-*Weekly/monthly ledgers, transaction records, safe-to-spend metrics, and account limit warnings.*
-<table>
-  <tr>
-    <td width="50%"><b>🌙 Dark Mode</b></td>
-    <td width="50%"><b>☀️ Light Mode</b></td>
-  </tr>
-  <tr>
-    <td><img src="./src/assets/finances_dark.png" alt="Finances HUD Dark" /></td>
-    <td><img src="./src/assets/finances_light.png" alt="Finances HUD Light" /></td>
-  </tr>
-</table>
+### 💳 4. Financial Control Center
+* **Safe-to-Spend Calculator:** Dynamically computes available liquid cash reserves after accounting for upcoming bills and account limits.
+* **Managed Accounts & Limits:** Multi-account tracking with weekly start baselines, toggleable spending limits, and automated warning notifications.
+* **Ledger Portability:** Complete JSON/CSV statement export and backup restoration tools.
 
-### 4. The Vault Database
-*Task lists grouped by dynamic schedules, archives, and past completed task vault histories.*
-<table>
-  <tr>
-    <td width="50%"><b>🌙 Dark Mode</b></td>
-    <td width="50%"><b>☀️ Light Mode</b></td>
-  </tr>
-  <tr>
-    <td><img src="./src/assets/vault_dark.png" alt="Vault Database Dark" /></td>
-    <td><img src="./src/assets/vault_light.png" alt="Vault Database Light" /></td>
-  </tr>
-</table>
+### 🔐 5. Firebase Auth & Administrative Console
+* **Multi-User Security Profile:** Firebase Authentication integration with user approval lifecycle (*PENDING* vs *APPROVED*).
+* **Admin Console:** Dedicated administrative dashboard for user role management, instant profile approval, and system auditing.
 
-### 5. AI HTML Timetable Importer
-*Scraping raw HTML schedules directly into the local calendar.*
-<table>
-  <tr>
-    <td width="50%"><b>🌙 Dark Mode</b></td>
-    <td width="50%"><b>☀️ Light Mode</b></td>
-  </tr>
-  <tr>
-    <td><img src="./src/assets/timetable_dark.png" alt="Timetable Importer Dark" /></td>
-    <td><img src="./src/assets/timetable_light.png" alt="Timetable Importer Light" /></td>
-  </tr>
-</table>
+### 🤖 6. AI Natural Language & HTML Schedule Importer
+* **Gemini AI Natural Language Parser:** Converts text prompts like *"Physics Exam tomorrow at 3pm"* into structured JSON tasks using `@google/genai`.
+* **HTML Portal Importer:** Scrapes raw HTML timetable tables pasted from student web portals into recurring weekly routines.
 
-### 6. Control Panel & Settings
-*Manage GPG settings, configure API keys, and stack options dynamically.*
-<table>
-  <tr>
-    <td width="50%"><b>🌙 Dark Mode</b></td>
-    <td width="50%"><b>☀️ Light Mode</b></td>
-  </tr>
-  <tr>
-    <td><img src="./src/assets/settings_dark.png" alt="Settings HUD Dark" /></td>
-    <td><img src="./src/assets/settings_light.png" alt="Settings HUD Light" /></td>
-  </tr>
-</table>
+---
+
+## 🔒 Security & Privacy Audit
+
+DueVault AI is built with privacy-by-design:
+* **No Hardcoded Credentials:** 0 API keys, passwords, or personal emails are committed to the codebase.
+* **Environment Variables:** All Firebase configurations utilize Vite `import.meta.env` variables.
+* **Local Storage First:** Task databases, financial ledgers, and user preferences reside entirely within the user's browser.
 
 ---
 
 ## 💻 Tech Stack
 
-*   **Frontend Engine:** React.js + Vite (built on pure components and standard ES modules)
-*   **Styling:** Vanilla CSS Custom Variables (designed dynamically for seamless Light/Dark toggle support) + Tailwind utility layout structures
-*   **Icons:** Lucide React
-*   **Generative AI:** `@google/genai` (utilizing Gemini models for text commands parsing)
-*   **State & Storage:** Persistent client-side LocalStorage DB
+* **Frontend:** React.js + Vite (ES Modules)
+* **Styling:** Vanilla CSS Custom Variables + Tailwind CSS (Full Dark/Light Theme Support)
+* **PWA & Offline Engine:** Service Worker (`sw.js`) with Web Notification API & Web Audio API
+* **Backend Services:** Firebase Authentication + Firestore Database
+* **Generative AI:** `@google/genai` (Gemini Models for Natural Language Processing)
+* **Iconography:** Lucide React
 
 ---
 
 ## 🚀 Getting Started
 
-To run DueVault AI locally on your system:
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Prayanshuchourasia-01/DueVault-AI.git
+cd capstone
+```
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/Prayanshuchourasia-01/DueVault-AI.git
-    cd DueVault-AI
-    ```
+### 2. Install Dependencies
+```bash
+npm install
+```
 
-2.  **Install Dependencies:**
-    ```bash
-    npm install
-    ```
+### 3. Configure Environment Variables (Optional for Firebase)
+Create a `.env` file in the root directory:
+```env
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
 
-3.  **Start Local Hot-Reload Server:**
-    ```bash
-    npm run dev
-    ```
+### 4. Run Development Server
+```bash
+npm run dev
+```
+Open `http://localhost:5173`.
 
-4.  **Configure API Keys:**
-    *   Open `http://localhost:5173`.
-    *   Navigate to the **Settings ⚙️** view.
-    *   Paste your **Gemini API Key** to authorize the natural language parser.
+### 5. Build for Production
+```bash
+npm run build
+```
+
+---
+
+## 📱 PWA Mobile Installation
+
+1. Open your deployed DueVault AI URL in **Google Chrome**, **Edge**, or **Safari**.
+2. Select **"Add to Home Screen"** or **"Install App"** from the browser menu.
+3. Grant notification permissions when prompted to enable background alerts and lock-screen action buttons.
+
+---
+
+## 📄 License
+
+Created for the **Google 5 Days AI Course**. Open-source under the MIT License.

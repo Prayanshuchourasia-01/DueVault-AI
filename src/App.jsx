@@ -525,7 +525,7 @@ function App() {
           <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 text-left text-2xs text-indigo-300 leading-normal">
             <p className="font-semibold text-slate-200">🚀 Speed Up Approval:</p>
             <p className="mt-1">
-              Contact the developer at <span className="font-bold text-cyan-400 font-mono select-all">praya.chourasia@gmail.com</span> with your User ID to request instant authorization.
+              Contact the developer at <span className="font-bold text-cyan-400 font-mono select-all">prayanshuchourasia01@gmail.com</span> with your User ID to request instant authorization.
             </p>
           </div>
 
