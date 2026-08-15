@@ -7,6 +7,7 @@ export const useAudioAlarm = () => {
   const intervalRef = useRef(null);
   const customAudioRef = useRef(null);
 
+  // Tone 1: Modern Chime (Crystal Glass)
   const playModernChime = (ctx) => {
     const playNote = (frequency, delay, duration) => {
       const osc = ctx.createOscillator();
@@ -28,6 +29,79 @@ export const useAudioAlarm = () => {
     playNote(1760.00, 0.4, 0.8); // A6
   };
 
+  // Tone 2: Digital Clock (Classic Watch Double Beep)
+  const playDigitalClock = (ctx) => {
+    const playBeep = (freq, delay) => {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+      const now = ctx.currentTime + delay;
+      gainNode.gain.setValueAtTime(0, now);
+      gainNode.gain.linearRampToValueAtTime(0.12, now + 0.01);
+      gainNode.gain.setValueAtTime(0.12, now + 0.08);
+      gainNode.gain.linearRampToValueAtTime(0, now + 0.09);
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    };
+    playBeep(2093.00, 0.0);   // C7
+    playBeep(2093.00, 0.12);  // C7
+  };
+
+  // Tone 3: Marimba Ripple (Acoustic Wooden Marimba)
+  const playMarimbaRipple = (ctx) => {
+    const playMarimbaKey = (freq, delay) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1200, ctx.currentTime + delay);
+
+      const now = ctx.currentTime + delay;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.35, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.4);
+    };
+    playMarimbaKey(523.25, 0.0);  // C5
+    playMarimbaKey(659.25, 0.08); // E5
+    playMarimbaKey(783.99, 0.16); // G5
+    playMarimbaKey(1046.50, 0.24); // C6
+  };
+
+  // Tone 4: Radar Ping (Sonar Echo Pulse)
+  const playRadarPing = (ctx) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1400, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.3);
+
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.3, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.65);
+  };
+
+  // Tone 5: Soft Pulse (Ambient)
   const playSoftPulse = (ctx) => {
     const osc = ctx.createOscillator();
     const gainNode = ctx.createGain();
@@ -52,30 +126,56 @@ export const useAudioAlarm = () => {
     osc.stop(now + 1.6);
   };
 
-  const playUrgentAlarm = (ctx) => {
-    const playBeep = (freq, delay) => {
+  // Tone 6: Cyber Siren (High Urgency)
+  const playCyberSiren = (ctx) => {
+    const playTone = (freq, delay, dur) => {
       const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      osc.type = 'triangle'; // Still pleasant, avoiding square/saw
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
       const now = ctx.currentTime + delay;
-      gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(0.25, now + 0.02);
-      gainNode.gain.linearRampToValueAtTime(0, now + 0.15);
-      osc.connect(gainNode);
-      gainNode.connect(ctx.destination);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.2);
+      osc.stop(now + dur);
     };
-    // Double beep
-    playBeep(1046.50, 0);    // C6
-    playBeep(1046.50, 0.15); // C6
+    playTone(960, 0.0, 0.15);
+    playTone(770, 0.15, 0.15);
+    playTone(960, 0.3, 0.15);
+  };
+
+  // Tone 7: Cosmic Bell (Celestial Harmonized Chord)
+  const playCosmicBell = (ctx) => {
+    const playBell = (freq, delay) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+      const now = ctx.currentTime + delay;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.25, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 1.2);
+    };
+    playBell(659.25, 0.0);  // E5
+    playBell(987.77, 0.15); // B5
+    playBell(1318.51, 0.3); // E6
   };
 
   const triggerSequence = (ctx, toneType) => {
     if (ctx.state === 'closed') return;
-    if (toneType === 'soft-pulse') playSoftPulse(ctx);
-    else if (toneType === 'urgent-alarm') playUrgentAlarm(ctx);
+    if (toneType === 'digital-clock') playDigitalClock(ctx);
+    else if (toneType === 'marimba-ripple') playMarimbaRipple(ctx);
+    else if (toneType === 'radar-ping') playRadarPing(ctx);
+    else if (toneType === 'soft-pulse') playSoftPulse(ctx);
+    else if (toneType === 'cyber-siren') playCyberSiren(ctx);
+    else if (toneType === 'cosmic-bell') playCosmicBell(ctx);
     else playModernChime(ctx); // Default modern-chime
   };
 
@@ -105,7 +205,7 @@ export const useAudioAlarm = () => {
 
       triggerSequence(ctx, toneType);
       
-      const loopTime = toneType === 'soft-pulse' ? 2000 : (toneType === 'urgent-alarm' ? 1000 : 3000);
+      const loopTime = toneType === 'digital-clock' ? 800 : (toneType === 'cyber-siren' ? 900 : 2500);
       intervalRef.current = setInterval(() => triggerSequence(ctx, toneType), loopTime);
 
     } catch (error) {

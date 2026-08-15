@@ -107,10 +107,14 @@ const SettingsTab = ({ onTasksExtracted, clearRoutines, startAlarm }) => {
   };
 
   const ringtones = [
-    { id: 'modern-chime', label: 'Modern Chime', desc: 'Gentle cascading sine wave melody.' },
+    { id: 'modern-chime', label: 'Modern Chime', desc: 'Harmonized A5-E6-A6 crystal glass chime.' },
+    { id: 'digital-clock', label: 'Digital Watch Beep', desc: 'Classic double-beep precision watch alarm.' },
+    { id: 'marimba-ripple', label: 'Marimba Ripple', desc: 'Warm wooden marimba acoustic arpeggio.' },
+    { id: 'radar-ping', label: 'Radar Sonar Ping', desc: 'High-frequency resonant sonar ping echo.' },
+    { id: 'cosmic-bell', label: 'Cosmic Bell', desc: 'Harmonized celestial bell chime chord.' },
     { id: 'soft-pulse', label: 'Soft Pulse', desc: 'Slow, pulsing low-pass triangle wave.' },
-    { id: 'urgent-alarm', label: 'Urgent Alarm', desc: 'Fast-paced, high-attention double beep.' },
-    { id: 'custom', label: 'Custom Audio', desc: 'Your uploaded ringtone file.' }
+    { id: 'cyber-siren', label: 'Cyber Siren', desc: 'Fast-paced high-attention dual frequency siren.' },
+    { id: 'custom', label: 'Custom Audio', desc: 'Your uploaded MP3/WAV audio file.' }
   ];
 
   return (
