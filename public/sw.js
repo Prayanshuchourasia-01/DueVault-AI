@@ -1,4 +1,4 @@
-const CACHE_NAME = 'duevault-cache-v12';
+const CACHE_NAME = 'duevault-cache-v13';
 const ASSETS = [
   '/',
   '/index.html',
@@ -55,6 +55,86 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
+// Helper: Schedule native OS notification using TimestampTrigger if available
+function scheduleNativeTrigger(title, options, timestamp) {
+  try {
+    if (typeof Notification !== 'undefined' && 'showTrigger' in Notification.prototype && typeof TimestampTrigger !== 'undefined') {
+      if (timestamp > Date.now()) {
+        self.registration.showNotification(title, {
+          ...options,
+          showTrigger: new TimestampTrigger(timestamp)
+        });
+        console.log(`[SW] Native OS TimestampTrigger registered for "${title}" at`, new Date(timestamp).toLocaleTimeString());
+        return true;
+      }
+    }
+  } catch (err) {
+    console.warn('[SW] TimestampTrigger error:', err);
+  }
+  return false;
+}
+
+// Pre-schedule upcoming block notifications for the day
+function preScheduleDayNotifications() {
+  const nowMs = Date.now();
+  const todayStr = new Date().toLocaleDateString('en-CA');
+
+  cachedRoutines.forEach(rt => {
+    // Schedule Start Notification
+    if (rt.start) {
+      const startDate = new Date(rt.start);
+      const startMs = startDate.getTime();
+      if (!isNaN(startMs) && startMs > nowMs) {
+        const rtHours = String(startDate.getHours()).padStart(2, '0');
+        const rtMinutes = String(startDate.getMinutes()).padStart(2, '0');
+        const rtTimeStr = `${rtHours}:${rtMinutes}`;
+        const tag = `rt-start-${rt.id}-${todayStr}-${rtTimeStr}`;
+
+        scheduleNativeTrigger(`🟢 Block Starting: ${rt.title}`, {
+          body: `Your timetable block "${rt.title}" is starting now at ${rtTimeStr}.`,
+          icon: '/favicon.svg',
+          badge: '/favicon.svg',
+          vibrate: [200, 100, 200, 100, 200],
+          tag,
+          renotify: true,
+          requireInteraction: true,
+          actions: [
+            { action: 'MARK_DONE', title: '✅ Mark Done' },
+            { action: 'DISMISS', title: '✖ Dismiss' }
+          ],
+          data: { taskId: rt.routineId || rt.id, isRoutine: true }
+        }, startMs);
+      }
+    }
+
+    // Schedule End Notification
+    if (rt.end) {
+      const endDate = new Date(rt.end);
+      const endMs = endDate.getTime();
+      if (!isNaN(endMs) && endMs > nowMs) {
+        const rtEndHours = String(endDate.getHours()).padStart(2, '0');
+        const rtEndMinutes = String(endDate.getMinutes()).padStart(2, '0');
+        const rtEndTimeStr = `${rtEndHours}:${rtEndMinutes}`;
+        const tagEnd = `rt-end-${rt.id}-${todayStr}-${rtEndTimeStr}`;
+
+        scheduleNativeTrigger(`🔴 Block Ended: ${rt.title}`, {
+          body: `Your timetable block "${rt.title}" has ended at ${rtEndTimeStr}.`,
+          icon: '/favicon.svg',
+          badge: '/favicon.svg',
+          vibrate: [100, 50, 100],
+          tag: tagEnd,
+          renotify: true,
+          actions: [
+            { action: 'MARK_DONE', title: '✅ Mark Done' },
+            { action: 'DISMISS', title: '✖ Dismiss' }
+          ],
+          data: { taskId: rt.routineId || rt.id, isRoutine: true }
+        }, endMs);
+      }
+    }
+  });
+}
+
 // Listen for messages from the main app
 self.addEventListener('message', (e) => {
   if (!e.data) return;
@@ -63,16 +143,18 @@ self.addEventListener('message', (e) => {
     cachedRoutines = e.data.routines || [];
     cachedTasks = e.data.tasks || [];
     console.log('[SW] Schedules synced into Service Worker background context:', cachedRoutines.length, 'routines,', cachedTasks.length, 'tasks');
+    preScheduleDayNotifications();
   }
 
   if (e.data.type === 'SHOW_NOTIFICATION') {
     const { title, options } = e.data;
+    const tag = options.tag || ('duevault-sw-' + Date.now());
     self.registration.showNotification(title, {
       body: options.body || '',
       icon: options.icon || '/favicon.svg',
       badge: options.badge || '/favicon.svg',
       vibrate: options.vibrate || [200, 100, 200],
-      tag: options.tag || 'duevault-sw-' + Date.now(),
+      tag,
       renotify: true,
       requireInteraction: true,
       silent: false,
@@ -85,7 +167,7 @@ self.addEventListener('message', (e) => {
   }
 });
 
-// Background Check Loop inside Service Worker context (runs even when main app window is closed)
+// Background Check Loop inside Service Worker context (runs as fallback when app is backgrounded)
 function checkBackgroundNotifications() {
   const now = new Date();
   const currentHours = String(now.getHours()).padStart(2, '0');
@@ -93,7 +175,7 @@ function checkBackgroundNotifications() {
   const timeStr = `${currentHours}:${currentMinutes}`;
   const todayStr = now.toLocaleDateString('en-CA');
 
-  // Check cached routine timetable blocks
+  // Check cached routine timetable blocks with UNIFIED tags for deduplication
   cachedRoutines.forEach(rt => {
     if (rt.start) {
       const startDate = new Date(rt.start);
@@ -101,15 +183,15 @@ function checkBackgroundNotifications() {
         const rtHours = String(startDate.getHours()).padStart(2, '0');
         const rtMinutes = String(startDate.getMinutes()).padStart(2, '0');
         const rtTimeStr = `${rtHours}:${rtMinutes}`;
-        const key = `sw-rt-${rt.id}-${todayStr}-${rtTimeStr}`;
-        if (rtTimeStr === timeStr && !notifiedKeys.has(key)) {
-          notifiedKeys.add(key);
+        const tag = `rt-start-${rt.id}-${todayStr}-${rtTimeStr}`;
+        if (rtTimeStr === timeStr && !notifiedKeys.has(tag)) {
+          notifiedKeys.add(tag);
           self.registration.showNotification(`🟢 Block Starting: ${rt.title}`, {
             body: `Your timetable block "${rt.title}" is starting now at ${rtTimeStr}.`,
             icon: '/favicon.svg',
             badge: '/favicon.svg',
             vibrate: [200, 100, 200, 100, 200],
-            tag: key,
+            tag,
             renotify: true,
             requireInteraction: true,
             silent: false,
@@ -129,15 +211,15 @@ function checkBackgroundNotifications() {
         const rtEndHours = String(endDate.getHours()).padStart(2, '0');
         const rtEndMinutes = String(endDate.getMinutes()).padStart(2, '0');
         const rtEndTimeStr = `${rtEndHours}:${rtEndMinutes}`;
-        const keyEnd = `sw-rt-end-${rt.id}-${todayStr}-${rtEndTimeStr}`;
-        if (rtEndTimeStr === timeStr && !notifiedKeys.has(keyEnd)) {
-          notifiedKeys.add(keyEnd);
+        const tagEnd = `rt-end-${rt.id}-${todayStr}-${rtEndTimeStr}`;
+        if (rtEndTimeStr === timeStr && !notifiedKeys.has(tagEnd)) {
+          notifiedKeys.add(tagEnd);
           self.registration.showNotification(`🔴 Block Ended: ${rt.title}`, {
             body: `Your timetable block "${rt.title}" has ended at ${rtEndTimeStr}.`,
             icon: '/favicon.svg',
             badge: '/favicon.svg',
             vibrate: [100, 50, 100],
-            tag: keyEnd,
+            tag: tagEnd,
             renotify: true,
             silent: false,
             actions: [
@@ -160,15 +242,15 @@ function checkBackgroundNotifications() {
         const tHours = String(startDate.getHours()).padStart(2, '0');
         const tMinutes = String(startDate.getMinutes()).padStart(2, '0');
         const tTimeStr = `${tHours}:${tMinutes}`;
-        const key = `sw-task-${task.id}-${todayStr}-${tTimeStr}`;
-        if (tTimeStr === timeStr && !notifiedKeys.has(key)) {
-          notifiedKeys.add(key);
+        const tag = `task-start-${task.id}-${todayStr}-${tTimeStr}`;
+        if (tTimeStr === timeStr && !notifiedKeys.has(tag)) {
+          notifiedKeys.add(tag);
           self.registration.showNotification(`🟢 Task Starting: ${task.title}`, {
             body: `Your task "${task.title}" is starting now at ${tTimeStr}.`,
             icon: '/favicon.svg',
             badge: '/favicon.svg',
             vibrate: [200, 100, 200],
-            tag: key,
+            tag,
             renotify: true,
             requireInteraction: true,
             silent: false,
